@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <dos.h>
 #include <stdint.h>
+#include <math.h>
 
 #define VIDEO_INT           0x10      /* the BIOS video interrupt. */
 #define SET_MODE            0x00      /* BIOS func to set the video mode. */
@@ -13,6 +14,7 @@
 #define NUM_COLORS          256       /* number of colors in mode 0x13 */
 
 #define SET_PIXEL(x,y,color)      screen_buf[(y)*SCREEN_WIDTH + (x)] = color
+#define SIGN(x)                   (((x) < 0) ? -1 : (((x) > 0) ? 1 : 0))
 
 #define KB_ARRAY_LENGTH     256
 #define KB_QUEUE_LENGTH     256
@@ -30,13 +32,24 @@
 #define KEY_UP              72 
 #define KEY_DOWN            80
 #define KEY_F10             68
+
+#define RAD_30              (M_PI/6)
+#define RAD_60              (M_PI/3)
+#define RAD_90              (M_PI/2)
+#define RAD_120             (M_PI/1.5)
+#define RAD_240             (1.5*M_PI)
+#define RAD_360             (2*M_PI)
  
 #define X_AXIS              1
 #define Y_AXIS              2
 
 #define SCREEN_SIZE         64000
+#define TILE_WIDTH          8
+#define TILE_HEIGHT         8
+#define CHARACTER_SIZE      72
 
 int running = 1;
+uint8_t alphabet [4240];
 
 typedef struct
 {
@@ -63,11 +76,12 @@ typedef struct
     uint8_t colour;
 } Polygon;
 
-Line line_array[4] = {
-    {{40.0,  50.0}, {20.0, 160.0}, 41},
+Line line_array[5] = {
+    {{40.0,  50.0}, {20.0, 40.0}, 41},
     {{100.0, 20.0}, {180.0, 30.0}, 55},
-    {{120.0, 100.0}, {120.0, 180.0}, 41},
-    {{60.0,  50.0}, {120.0, 50.0}, 55}
+    {{220.0, 100.0}, {220.0, 180.0}, 41},
+    {{60.0,  50.0}, {120.0, 50.0}, 55},
+    {{240.0, 100.0}, {240.0, 105.0}, 41}
 };
 
 Polygon poly_array[10];
@@ -246,9 +260,67 @@ void process_input()
     clear_keys();
 }
 
+void load_font()
+{
+    FILE* file_ptr;
+    file_ptr = fopen("FONT.7UP", "rb");
+    fread(alphabet, 1, 4240, file_ptr);
+    fclose(file_ptr);
+}
+
+void draw_text(int x, int y, int i, uint8_t color)
+{
+    uint8_t index_x = 0;
+    uint8_t index_y = 0;
+    i = i * CHARACTER_SIZE;
+
+    for (index_y=0;index_y<TILE_HEIGHT;index_y++)
+    {
+        for (index_x=0;index_x<TILE_WIDTH;index_x++)
+        {
+            if (alphabet[i] != 13)
+            {
+                SET_PIXEL(x, y, alphabet[i] + color);
+                i++;
+                x++;
+            }
+            else
+            {
+                i++;
+                x++;
+            }
+        }
+        index_x = 0;
+        x = x - TILE_WIDTH;
+        y++;
+    }
+    index_y = 0;
+    i= 0;
+}
+
+void render_text(int x, int y, char* string, uint8_t color)
+{
+    int i = 0;
+    char c;
+    
+    while (string[i] != 0)
+    {
+        c = string[i];
+        draw_text(x, y, c - 32, color);
+        x = x + 10;
+        i++;
+    }
+}
+
 void draw_line_hor(int start_x, int start_y, int x_diff, uint8_t colour)
 {
     int offset_x;
+    
+    if (x_diff < 0)
+    {
+        start_x += x_diff;
+        x_diff = abs(x_diff);
+    }
     
     for (offset_x = 0; offset_x < x_diff; offset_x++)
     {
@@ -260,7 +332,13 @@ void draw_line_ver(int start_x, int start_y, int y_diff, uint8_t colour)
 {
     int offset_y;
     
-    for (offset_y = 0; offset_y < y_diff; offset_y++)
+    if (y_diff < 0)
+    {
+        start_y += y_diff;
+        y_diff = abs(y_diff);
+    }
+    
+    for (offset_y = 0; offset_y < y_diff + 1; offset_y++)
     {
         SET_PIXEL(start_x, start_y + offset_y, colour);
     }
@@ -268,36 +346,66 @@ void draw_line_ver(int start_x, int start_y, int y_diff, uint8_t colour)
 
 void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
 {
-    int offset_x;
-    int offset_y;
+    float offset_x;
+    float offset_y;
     
-    int x_diff = v2.x - v1.x;
-    int y_diff = v2.y - v1.y;
+    float x_diff = v2.x - v1.x;
+    float y_diff = v2.y - v1.y;
+    
+    int x_sign = SIGN(x_diff);
+    int y_sign = SIGN(y_diff);
+    
+    int x_pixel;
+    int y_pixel;
     
     float slope = 0.0;
     
     if (y_diff == 0)
-        draw_line_hor((int)v1.x, (int)v1.y, x_diff, colour);
+        draw_line_hor(v1.x, v1.y, x_diff, colour);
     
     else if (x_diff == 0)
-        draw_line_ver((int)v1.x, (int)v1.y, y_diff, colour);
+        draw_line_ver(v1.x, v1.y, y_diff, colour);
+    
+    else if (y_diff < 0 && x_diff < 0)
+        if (y_diff < x_diff)
+        {
+            slope = y_diff / x_diff;
+            
+            for (offset_x = 0; offset_x > x_diff; offset_x += x_sign)
+            {
+                offset_y = offset_x * slope;
+                SET_PIXEL((int)v2.x - (int)offset_x, (int)v2.y - (int)offset_y, colour);
+            }
+        }
+        else
+        {
+            slope = x_diff / y_diff;
+            
+            for (offset_y = 0; offset_y > y_diff; offset_y += y_sign)
+            {
+                offset_x = offset_y * slope;
+                SET_PIXEL((int)v2.x - (int)offset_x, (int)v2.y - (int)offset_y, colour);
+            }
+        }
     
     else if (y_diff < x_diff)
     {
-        slope = (float)y_diff / (float)x_diff;
-        for (offset_x = 0; offset_x < x_diff; offset_x++)
+        slope = y_diff / x_diff;
+        
+        for (offset_x = 0; offset_x < x_diff; offset_x += x_sign)
         {
             offset_y = offset_x * slope;
-            SET_PIXEL((int)v1.x + offset_x, (int)v1.y + offset_y, colour);
+            SET_PIXEL((int)v1.x + (int)offset_x, (int)v1.y + (int)offset_y, colour);
         }
     }
     else
     {
-        slope = (float)x_diff / (float)y_diff;
-        for (offset_y = 0; offset_y < y_diff; offset_y++)
+        slope = x_diff / y_diff;
+        
+        for (offset_y = 0; offset_y < y_diff; offset_y += y_sign)
         {
             offset_x = offset_y * slope;
-            SET_PIXEL((int)v1.x + offset_x, (int)v1.y + offset_y, colour);
+            SET_PIXEL((int)v1.x + (int)offset_x, (int)v1.y + (int)offset_y, colour);
         }
     }
 }
@@ -307,7 +415,7 @@ Polygon makeSquare(float angle, float side_length, uint8_t colour)
     Polygon newSquare;
     
     newSquare.numVectors = 4;
-    newSquare.vectors = malloc(sizeof(Vec2) * 4);
+    newSquare.vectors = calloc(4, sizeof(Vec2));
     newSquare.angle = angle;
     newSquare.colour = colour;
     
@@ -321,6 +429,27 @@ Polygon makeSquare(float angle, float side_length, uint8_t colour)
     newSquare.vectors[3].y = side_length/2.0;
     
     return newSquare;
+}
+
+Polygon makePolygon(int numVectors, float radius, uint8_t colour)
+{
+    Polygon newPolygon;
+    char i = 0;
+    float angle_step = RAD_360/numVectors;
+    
+    newPolygon.numVectors = numVectors;
+    newPolygon.vectors = malloc(numVectors * sizeof(Vec2));
+    newPolygon.colour = colour;
+    
+    while (i < newPolygon.numVectors)
+    {
+        newPolygon.vectors[i].x = cos(angle_step * (i + 1)) * radius;
+        newPolygon.vectors[i].y = sin(angle_step * (i + 1)) * radius;
+        
+        i++;
+    }
+    
+    return newPolygon;
 }
 
 void draw_polygon(Polygon* poly, int center_x, int center_y)
@@ -344,7 +473,7 @@ void draw_polygon(Polygon* poly, int center_x, int center_y)
     
     start_loc.x = center_x + poly->vectors[i].x;
     start_loc.y = center_y + poly->vectors[i].y;
-
+    
     end_loc.x = center_x + poly->vectors[0].x;
     end_loc.y = center_y + poly->vectors[0].y;
     
@@ -355,7 +484,7 @@ void draw_lines()
 {
     char i = 0;
     
-    while (i < 4)
+    while (i < 5)
     {
         draw_line(line_array[i].startpos, line_array[i].endpos, line_array[i].colour);
         i++;
@@ -365,10 +494,13 @@ void draw_lines()
 void draw_polygons()
 {
     char i = 0;
+    int x = 100;
+    int y = 100;
     
-    while (i < 1)
+    while (i < 3)
     {
-        draw_polygon(&poly_array[i], 150, 150);
+        draw_polygon(&poly_array[i], x, y);
+        x += 45;
         i++;
     }
 }
@@ -397,9 +529,14 @@ void quit()
 void main()
 {   
     Polygon Square = makeSquare(0.0, 10.0, 44);
+    Polygon Triangle = makePolygon(3, 15.0, 47);
+    Polygon Octagon = makePolygon(8, 25.0, 47);
     
     poly_array[0] = Square;
+    poly_array[1] = Triangle;
+    poly_array[2] = Octagon;
 
+    load_font();
     set_mode(VGA_256_COLOR_MODE);
     init_keyboard();
     
