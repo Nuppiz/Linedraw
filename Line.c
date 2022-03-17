@@ -349,8 +349,8 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
     float offset_x;
     float offset_y;
     
-    float x_diff = v2.x - v1.x;
-    float y_diff = v2.y - v1.y;
+    float x_diff = (v2.x - v1.x);
+    float y_diff = (v2.y - v1.y);
     
     int x_sign = SIGN(x_diff);
     int y_sign = SIGN(y_diff);
@@ -360,13 +360,14 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
     
     float slope = 0.0;
     
-    if (y_diff == 0)
+    if (fabs(y_diff) < 0.1)
         draw_line_hor(v1.x, v1.y, x_diff, colour);
     
-    else if (x_diff == 0)
+    else if (fabs(x_diff) < 0.1)
         draw_line_ver(v1.x, v1.y, y_diff, colour);
     
     else if (y_diff < 0 && x_diff < 0)
+    {
         if (y_diff < x_diff)
         {
             slope = y_diff / x_diff;
@@ -374,6 +375,8 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
             for (offset_x = 0; offset_x > x_diff; offset_x += x_sign)
             {
                 offset_y = offset_x * slope;
+                offset_x += 0.75;
+                offset_y += 0.75;
                 SET_PIXEL((int)v2.x - (int)offset_x, (int)v2.y - (int)offset_y, colour);
             }
         }
@@ -384,9 +387,41 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
             for (offset_y = 0; offset_y > y_diff; offset_y += y_sign)
             {
                 offset_x = offset_y * slope;
+                offset_x -= 0.75;
+                offset_y += 0.75;
                 SET_PIXEL((int)v2.x - (int)offset_x, (int)v2.y - (int)offset_y, colour);
             }
         }
+    }
+    
+    else if (y_diff < 0 || x_diff < 0)
+    {
+        if (y_diff < x_diff)
+        {
+            slope = y_diff / x_diff;
+            
+            for (offset_x = 0; offset_x < x_diff; offset_x += x_sign)
+            {
+                offset_y = offset_x * slope;
+                offset_x -= 0.6;
+                offset_y -= 0.6;
+                SET_PIXEL((int)v1.x + (int)offset_x, (int)v1.y + (int)offset_y, colour);
+            }
+        }
+
+        else
+        {
+            slope = x_diff / y_diff;
+            
+            for (offset_y = 0; offset_y < y_diff; offset_y += y_sign)
+            {
+                offset_x = offset_y * slope;
+                offset_x -= 0.6;
+                offset_y -= 0.6;
+                SET_PIXEL((int)v1.x + (int)offset_x, (int)v1.y + (int)offset_y, colour);
+            }
+        }
+    }
     
     else if (y_diff < x_diff)
     {
@@ -398,6 +433,7 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
             SET_PIXEL((int)v1.x + (int)offset_x, (int)v1.y + (int)offset_y, colour);
         }
     }
+    
     else
     {
         slope = x_diff / y_diff;
@@ -530,11 +566,11 @@ void main()
 {   
     Polygon Square = makeSquare(0.0, 10.0, 44);
     Polygon Triangle = makePolygon(3, 15.0, 47);
-    Polygon Octagon = makePolygon(8, 25.0, 47);
+    Polygon Pentagon = makePolygon(5, 25.0, 47);
     
     poly_array[0] = Square;
     poly_array[1] = Triangle;
-    poly_array[2] = Octagon;
+    poly_array[2] = Pentagon;
 
     load_font();
     set_mode(VGA_256_COLOR_MODE);
