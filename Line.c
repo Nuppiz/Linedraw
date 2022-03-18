@@ -32,8 +32,15 @@
 #define KEY_UP              72 
 #define KEY_DOWN            80
 #define KEY_F10             68
+#define KEY_ADD             78
+#define KEY_SUB             74
+#define KEY_Q               16
+#define KEY_W               17
 
+#define degToRad(degree)    ((degree) * M_PI / 180.0)
+#define RAD_15              (M_PI/12)
 #define RAD_30              (M_PI/6)
+#define RAD_45              (M_PI/4)
 #define RAD_60              (M_PI/3)
 #define RAD_90              (M_PI/2)
 #define RAD_120             (M_PI/1.5)
@@ -73,6 +80,7 @@ typedef struct
     float angle;
     Vec2* vectors;
     int numVectors;
+    float radius;
     uint8_t colour;
 } Polygon;
 
@@ -85,6 +93,7 @@ Line line_array[5] = {
 };
 
 Polygon poly_array[10];
+Polygon makePolygon(float angle, int numVectors, float radius, uint8_t colour);
 
 struct Input
 {
@@ -112,6 +121,39 @@ void set_mode(uint8_t mode)
     regs.h.ah = SET_MODE;
     regs.h.al = mode;
     int86(VIDEO_INT, &regs, &regs);
+}
+
+Vec2 change_vec_angle(Vec2 vector, float angle)
+{
+    Vec2 x_vec;
+    Vec2 y_vec;
+    Vec2 newVector;
+    
+    x_vec.x = cos(angle) * vector.x;
+    x_vec.y = sin(angle) * vector.x;
+    y_vec.x = cos(angle) * vector.y;
+    y_vec.y = sin(angle) * vector.y;
+    
+    newVector.x = x_vec.x - y_vec.y;
+    newVector.y = x_vec.y + y_vec.x;
+    
+    return newVector;
+}
+
+void change_poly_angles(Polygon* poly, float angle)
+{
+    char i;
+    
+    for (i = 0; i < poly->numVectors; i++)
+    {
+        poly->vectors[i] = change_vec_angle(poly->vectors[i], angle);
+    }
+    //poly->angle = angle;
+}
+
+void change_poly_size(Polygon* poly, float change)
+{
+    poly->radius += change;
 }
 
 void interrupt far keyhandler()
@@ -214,44 +256,46 @@ void clear_keys()
         g_Input->kb_array[i] &= KEY_PRESSED_FLAG;
 }
 
-/*void control_ingame()
+void control_ingame()
 {
-    player.direction.x = cos(radians); // calculate directional x-vector
-    player.direction.y = sin(radians); // calculate directional y-vector
+    if (KEY_IS_PRESSED(KEY_UP))
+    {
+        poly_array[1].vectors[2] = change_vec_angle(poly_array[1].vectors[2], RAD_15);
+    }
     
-    if (KEY_IS_PRESSED(KEY_UP) && player.magnitude <= MAX_SPEED)
+    else if (KEY_IS_PRESSED(KEY_DOWN))
     {
-        player.velocity.x += player.direction.x * ACCELERATION_RATE;
-        player.velocity.y += player.direction.y * ACCELERATION_RATE;
-        // calculate the player's current movement speed
-        player.magnitude = getVec2Length(player.velocity);
+        poly_array[1].vectors[2] = change_vec_angle(poly_array[1].vectors[2], -RAD_15);
     }
-    if (KEY_IS_PRESSED(KEY_DOWN) && player.magnitude <= MAX_SPEED)
+    
+    else if (KEY_IS_PRESSED(KEY_LEFT))
     {
-        player.velocity.x -= player.direction.x * ACCELERATION_RATE;
-        player.velocity.y -= player.direction.y * ACCELERATION_RATE;
-        // calculate the player's current movement speed
-        player.magnitude = getVec2Length(player.velocity);
+        change_poly_angles(&poly_array[1], -RAD_15);
     }
-    if (KEY_IS_PRESSED(KEY_LEFT))
+    
+    else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
-        heading -= TURN_RATE;
-        if (heading < 0)
-            heading = 360;
+        change_poly_angles(&poly_array[1], RAD_15);
     }
-    if (KEY_IS_PRESSED(KEY_RIGHT))
+    
+    else if (KEY_IS_PRESSED(KEY_ADD))
     {
-        heading += TURN_RATE;
-        if (heading > 360)
-            heading = 0;
+        change_poly_size(&poly_array[1], 1.0);
+        poly_array[1] =  makePolygon(poly_array[1].angle, poly_array[1].numVectors, poly_array[1].radius, poly_array[1].colour);
     }
-}*/
+    
+    else if (KEY_IS_PRESSED(KEY_SUB))
+    {
+        change_poly_size(&poly_array[1], -1.0);
+        poly_array[1] =  makePolygon(poly_array[1].angle, poly_array[1].numVectors, poly_array[1].radius, poly_array[1].colour);
+    }
+}
 
 void process_input()
 {
     get_keyboard();
 
-    //control_ingame();
+    control_ingame();
     
     // F10 always exits, wherever you are
     if (KEY_WAS_HIT(KEY_F10))
@@ -360,10 +404,10 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
     
     float slope = 0.0;
     
-    if (fabs(y_diff) < 0.1)
+    if (fabs(y_diff) < 1.5)
         draw_line_hor(v1.x, v1.y, x_diff, colour);
     
-    else if (fabs(x_diff) < 0.1)
+    else if (fabs(x_diff) < 1.5)
         draw_line_ver(v1.x, v1.y, y_diff, colour);
     
     else if (y_diff < 0 && x_diff < 0)
@@ -467,7 +511,7 @@ Polygon makeSquare(float angle, float side_length, uint8_t colour)
     return newSquare;
 }
 
-Polygon makePolygon(int numVectors, float radius, uint8_t colour)
+Polygon makePolygon(float angle, int numVectors, float radius, uint8_t colour)
 {
     Polygon newPolygon;
     char i = 0;
@@ -475,12 +519,14 @@ Polygon makePolygon(int numVectors, float radius, uint8_t colour)
     
     newPolygon.numVectors = numVectors;
     newPolygon.vectors = malloc(numVectors * sizeof(Vec2));
+    newPolygon.angle = angle;
+    newPolygon.radius = radius;
     newPolygon.colour = colour;
     
     while (i < newPolygon.numVectors)
     {
-        newPolygon.vectors[i].x = cos(angle_step * (i + 1)) * radius;
-        newPolygon.vectors[i].y = sin(angle_step * (i + 1)) * radius;
+        newPolygon.vectors[i].x = cos((angle_step + angle) * (i + 1)) * radius;
+        newPolygon.vectors[i].y = sin((angle_step + angle) * (i + 1)) * radius;
         
         i++;
     }
@@ -553,7 +599,7 @@ void render()
     memcpy(VGA,screen_buf,SCREEN_SIZE);
 
     // clear off-screen buffer so the screen updates properly
-    //_fmemset(screen_buf, 0, SCREEN_SIZE);
+    _fmemset(screen_buf, 0, SCREEN_SIZE);
 }
 
 void quit()
@@ -565,8 +611,8 @@ void quit()
 void main()
 {   
     Polygon Square = makeSquare(0.0, 10.0, 44);
-    Polygon Triangle = makePolygon(3, 15.0, 47);
-    Polygon Pentagon = makePolygon(5, 25.0, 47);
+    Polygon Triangle = makePolygon(0.0, 3, 15.0, 47);
+    Polygon Pentagon = makePolygon(0.0, 5, 25.0, 47);
     
     poly_array[0] = Square;
     poly_array[1] = Triangle;
