@@ -140,6 +140,16 @@ Vec2 change_vec_angle(Vec2 vector, float angle)
     return newVector;
 }
 
+Vec2 change_vec_scale(Vec2 vector, float scale)
+{
+    Vec2 newVector;
+    
+    newVector.x = vector.x * scale;
+    newVector.y = vector.y * scale;
+    
+    return newVector;
+}
+
 void change_poly_angles(Polygon* poly, float angle)
 {
     char i;
@@ -148,12 +158,16 @@ void change_poly_angles(Polygon* poly, float angle)
     {
         poly->vectors[i] = change_vec_angle(poly->vectors[i], angle);
     }
-    //poly->angle = angle;
 }
 
-void change_poly_size(Polygon* poly, float change)
+void change_poly_size(Polygon* poly, float scale)
 {
-    poly->radius += change;
+    char i;
+    
+    for (i = 0; i < poly->numVectors; i++)
+    {
+        poly->vectors[i] = change_vec_scale(poly->vectors[i], scale);
+    }
 }
 
 void interrupt far keyhandler()
@@ -278,16 +292,14 @@ void control_ingame()
         change_poly_angles(&poly_array[1], RAD_15);
     }
     
-    else if (KEY_IS_PRESSED(KEY_ADD))
+    else if (KEY_IS_PRESSED(KEY_W))
     {
-        change_poly_size(&poly_array[1], 1.0);
-        poly_array[1] =  makePolygon(poly_array[1].angle, poly_array[1].numVectors, poly_array[1].radius, poly_array[1].colour);
+        change_poly_size(&poly_array[1], 1.1);
     }
     
-    else if (KEY_IS_PRESSED(KEY_SUB))
+    else if (KEY_IS_PRESSED(KEY_Q))
     {
-        change_poly_size(&poly_array[1], -1.0);
-        poly_array[1] =  makePolygon(poly_array[1].angle, poly_array[1].numVectors, poly_array[1].radius, poly_array[1].colour);
+        change_poly_size(&poly_array[1], 0.9);
     }
 }
 
