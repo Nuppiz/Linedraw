@@ -79,8 +79,10 @@ typedef struct
 {
     float angle;
     Vec2* vectors;
+    Vec2* transformedV;
     int numVectors;
     float radius;
+    float scale;
     uint8_t colour;
 } Polygon;
 
@@ -93,7 +95,7 @@ Line line_array[5] = {
 };
 
 Polygon poly_array[10];
-Polygon makePolygon(float angle, int numVectors, float radius, uint8_t colour);
+//Polygon makePolygon(float angle, int numVectors, float radius, float scale, uint8_t colour);
 
 struct Input
 {
@@ -140,7 +142,7 @@ Vec2 change_vec_angle(Vec2 vector, float angle)
     return newVector;
 }
 
-Vec2 change_vec_scale(Vec2 vector, float scale)
+/*Vec2 change_vec_scale(Vec2 vector, float scale)
 {
     Vec2 newVector;
     
@@ -156,8 +158,9 @@ void change_poly_angles(Polygon* poly, float angle)
     
     for (i = 0; i < poly->numVectors; i++)
     {
-        poly->vectors[i] = change_vec_angle(poly->vectors[i], angle);
+        poly->transformedV[i] = change_vec_angle(poly->transformedV[i], angle);
     }
+    poly->angle = angle;
 }
 
 void change_poly_size(Polygon* poly, float scale)
@@ -166,7 +169,30 @@ void change_poly_size(Polygon* poly, float scale)
     
     for (i = 0; i < poly->numVectors; i++)
     {
-        poly->vectors[i] = change_vec_scale(poly->vectors[i], scale);
+        poly->transformedV[i] = change_vec_scale(poly->transformedV[i], scale);
+    }
+}*/
+
+void updatePoly(Polygon* poly)
+{
+    char i;
+    float cos_angle;
+    float sin_angle;
+    float old_x;
+    float old_y;
+    float new_x;
+    float new_y;
+    
+    for (i = 0; i < poly->numVectors; i++)
+    {
+        old_x = poly->vectors[i].x;
+        old_y = poly->vectors[i].y;
+        cos_angle = cos(poly->angle);
+        sin_angle = sin(poly->angle);
+        new_x = (old_x * cos_angle - old_y * sin_angle) * poly->scale;
+        new_y = (old_x * sin_angle + old_y * cos_angle) * poly->scale;
+        poly->transformedV[i].x = new_x;
+        poly->transformedV[i].y = new_y;
     }
 }
 
@@ -274,32 +300,36 @@ void control_ingame()
 {
     if (KEY_IS_PRESSED(KEY_UP))
     {
-        poly_array[1].vectors[2] = change_vec_angle(poly_array[1].vectors[2], RAD_15);
+        poly_array[1].transformedV[2] = change_vec_angle(poly_array[1].transformedV[2], RAD_15);
     }
     
     else if (KEY_IS_PRESSED(KEY_DOWN))
     {
-        poly_array[1].vectors[2] = change_vec_angle(poly_array[1].vectors[2], -RAD_15);
+        poly_array[1].transformedV[2] = change_vec_angle(poly_array[1].transformedV[2], -RAD_15);
     }
     
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
-        change_poly_angles(&poly_array[1], -RAD_15);
+        poly_array[1].angle -= RAD_15;
+        updatePoly(&poly_array[1]);
     }
     
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
-        change_poly_angles(&poly_array[1], RAD_15);
+        poly_array[1].angle += RAD_15;
+        updatePoly(&poly_array[1]);
     }
     
-    else if (KEY_IS_PRESSED(KEY_W))
+    else if (KEY_IS_PRESSED(KEY_ADD))
     {
-        change_poly_size(&poly_array[1], 1.1);
+        poly_array[1].scale *= 1.05;
+        updatePoly(&poly_array[1]);
     }
     
-    else if (KEY_IS_PRESSED(KEY_Q))
+    else if (KEY_IS_PRESSED(KEY_SUB))
     {
-        change_poly_size(&poly_array[1], 0.9);
+        poly_array[1].scale /= 1.05;
+        updatePoly(&poly_array[1]);
     }
 }
 
@@ -502,13 +532,15 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
     }
 }
 
-Polygon makeSquare(float angle, float side_length, uint8_t colour)
+Polygon makeSquare(float angle, float side_length, float scale, uint8_t colour)
 {
     Polygon newSquare;
     
     newSquare.numVectors = 4;
-    newSquare.vectors = calloc(4, sizeof(Vec2));
+    newSquare.vectors = malloc(newSquare.numVectors * sizeof(Vec2));
+    newSquare.transformedV = malloc(newSquare.numVectors * sizeof(Vec2));
     newSquare.angle = angle;
+    newSquare.scale = scale;
     newSquare.colour = colour;
     
     newSquare.vectors[0].x = -side_length/2.0;
@@ -520,10 +552,12 @@ Polygon makeSquare(float angle, float side_length, uint8_t colour)
     newSquare.vectors[3].x = -side_length/2.0;
     newSquare.vectors[3].y = side_length/2.0;
     
+    memcpy(newSquare.transformedV, newSquare.vectors, sizeof(Vec2) * newSquare.numVectors);
+    
     return newSquare;
 }
 
-Polygon makePolygon(float angle, int numVectors, float radius, uint8_t colour)
+Polygon makePolygon(float angle, int numVectors, float radius, float scale, uint8_t colour)
 {
     Polygon newPolygon;
     char i = 0;
@@ -531,8 +565,10 @@ Polygon makePolygon(float angle, int numVectors, float radius, uint8_t colour)
     
     newPolygon.numVectors = numVectors;
     newPolygon.vectors = malloc(numVectors * sizeof(Vec2));
+    newPolygon.transformedV = malloc(numVectors * sizeof(Vec2));
     newPolygon.angle = angle;
     newPolygon.radius = radius;
+    newPolygon.scale = scale;
     newPolygon.colour = colour;
     
     while (i < newPolygon.numVectors)
@@ -542,6 +578,8 @@ Polygon makePolygon(float angle, int numVectors, float radius, uint8_t colour)
         
         i++;
     }
+    
+    memcpy(newPolygon.transformedV, newPolygon.vectors, sizeof(Vec2) * newPolygon.numVectors);
     
     return newPolygon;
 }
@@ -554,22 +592,22 @@ void draw_polygon(Polygon* poly, int center_x, int center_y)
     
     while (i < poly->numVectors - 1)
     {
-        start_loc.x = center_x + poly->vectors[i].x;
-        start_loc.y = center_y + poly->vectors[i].y;
+        start_loc.x = center_x + poly->transformedV[i].x;
+        start_loc.y = center_y + poly->transformedV[i].y;
         
-        end_loc.x = center_x + poly->vectors[i + 1].x;
-        end_loc.y = center_y + poly->vectors[i + 1].y;
+        end_loc.x = center_x + poly->transformedV[i + 1].x;
+        end_loc.y = center_y + poly->transformedV[i + 1].y;
 
         draw_line(start_loc, end_loc, poly->colour);
         
         i++;
     }
     
-    start_loc.x = center_x + poly->vectors[i].x;
-    start_loc.y = center_y + poly->vectors[i].y;
+    start_loc.x = center_x + poly->transformedV[i].x;
+    start_loc.y = center_y + poly->transformedV[i].y;
     
-    end_loc.x = center_x + poly->vectors[0].x;
-    end_loc.y = center_y + poly->vectors[0].y;
+    end_loc.x = center_x + poly->transformedV[0].x;
+    end_loc.y = center_y + poly->transformedV[0].y;
     
     draw_line(start_loc, end_loc, poly->colour);
 }
@@ -622,13 +660,9 @@ void quit()
 
 void main()
 {   
-    Polygon Square = makeSquare(0.0, 10.0, 44);
-    Polygon Triangle = makePolygon(0.0, 3, 15.0, 47);
-    Polygon Pentagon = makePolygon(0.0, 5, 25.0, 47);
-    
-    poly_array[0] = Square;
-    poly_array[1] = Triangle;
-    poly_array[2] = Pentagon;
+    poly_array[0] = makeSquare(0.0, 10.0, 1.0, 44);
+    poly_array[1] = makePolygon(0.0, 3, 15.0, 1.0, 47);
+    poly_array[2] = makePolygon(0.0, 5, 25.0, 1.0, 47);
 
     load_font();
     set_mode(VGA_256_COLOR_MODE);
