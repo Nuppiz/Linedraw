@@ -77,6 +77,13 @@ typedef struct
 
 typedef struct
 {
+    Vec2_int startpos;
+    Vec2_int endpos;
+    uint8_t colour;
+} Line_int;
+
+typedef struct
+{
     float angle;
     Vec2* vectors;
     Vec2* transformedV;
@@ -92,6 +99,11 @@ Line line_array[5] = {
     {{220.0, 100.0}, {220.0, 180.0}, 41},
     {{60.0,  50.0}, {120.0, 50.0}, 55},
     {{240.0, 100.0}, {240.0, 105.0}, 41}
+};
+
+Line_int intline_array[2] = {
+    {{210, 10}, {260, 20}, 55},
+    {{220, 10}, {230, 60}, 41}
 };
 
 Polygon poly_array[10];
@@ -532,6 +544,49 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
     }
 }
 
+void draw_line_int(Vec2_int v1, Vec2_int v2, uint8_t colour)
+{
+    int offset_x = 0;
+    int offset_y = 0;
+    
+    int x_diff = (v2.x - v1.x);
+    int y_diff = (v2.y - v1.y);
+    int ratio;
+    
+    if (abs(y_diff) < 1)
+        draw_line_hor(v1.x, v1.y, x_diff, colour);
+    
+    else if (abs(x_diff) < 1)
+        draw_line_ver(v1.x, v1.y, y_diff, colour);
+    
+    else if (y_diff < x_diff)
+    {
+        ratio = x_diff / y_diff;
+        
+        while (offset_x <= x_diff)
+        {
+            SET_PIXEL(v1.x + offset_x, v1.y + offset_y, colour);
+            offset_x++;
+            if (offset_x % ratio == 0)
+                offset_y += 1;
+            i++;
+        }
+    }
+    
+    else
+    {
+        ratio = y_diff / x_diff;
+        
+        while (offset_y <= y_diff)
+        {
+            SET_PIXEL(v1.x + offset_x, v1.y + offset_y, colour);
+            offset_y++;
+            if (offset_y % ratio == 0)
+                offset_x += 1;
+        }
+    }
+}
+
 Polygon makeSquare(float angle, float side_length, float scale, uint8_t colour)
 {
     Polygon newSquare;
@@ -621,6 +676,8 @@ void draw_lines()
         draw_line(line_array[i].startpos, line_array[i].endpos, line_array[i].colour);
         i++;
     }
+    draw_line_int(intline_array[0].startpos, intline_array[0].endpos, line_array[0].colour);
+    draw_line_int(intline_array[1].startpos, intline_array[1].endpos, line_array[1].colour);
 }
 
 void draw_polygons()
