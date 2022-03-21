@@ -107,7 +107,6 @@ Line_int intline_array[2] = {
 };
 
 Polygon poly_array[10];
-//Polygon makePolygon(float angle, int numVectors, float radius, float scale, uint8_t colour);
 
 struct Input
 {
@@ -163,7 +162,6 @@ Vec2 change_vec_angle(Vec2 vector, float angle)
     
     return newVector;
 }
-
 void change_poly_angles(Polygon* poly, float angle)
 {
     char i;
@@ -174,7 +172,6 @@ void change_poly_angles(Polygon* poly, float angle)
     }
     poly->angle = angle;
 }
-
 void change_poly_size(Polygon* poly, float scale)
 {
     char i;
@@ -322,26 +319,26 @@ void control_ingame()
     
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
-        poly_array[1].angle -= RAD_15;
-        updatePoly(&poly_array[1]);
+        poly_array[3].angle -= RAD_15;
+        updatePoly(&poly_array[3]);
     }
     
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
-        poly_array[1].angle += RAD_15;
-        updatePoly(&poly_array[1]);
+        poly_array[3].angle += RAD_15;
+        updatePoly(&poly_array[3]);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))
     {
-        poly_array[1].scale *= 1.05;
-        updatePoly(&poly_array[1]);
+        poly_array[3].scale *= 1.05;
+        updatePoly(&poly_array[3]);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
     {
-        poly_array[1].scale /= 1.05;
-        updatePoly(&poly_array[1]);
+        poly_array[3].scale /= 1.05;
+        updatePoly(&poly_array[3]);
     }
 }
 
@@ -551,39 +548,85 @@ void draw_line_int(Vec2_int v1, Vec2_int v2, uint8_t colour)
     
     int x_diff = (v2.x - v1.x);
     int y_diff = (v2.y - v1.y);
-    int ratio;
+    int x_diff_a = abs(x_diff);
+    int y_diff_a = abs(y_diff);
+    int counter;
     
-    if (abs(y_diff) < 1)
+    int x_sign = SIGN(x_diff);
+    int y_sign = SIGN(y_diff);
+    
+    if (y_diff == 0)
         draw_line_hor(v1.x, v1.y, x_diff, colour);
     
-    else if (abs(x_diff) < 1)
+    else if (x_diff == 0)
         draw_line_ver(v1.x, v1.y, y_diff, colour);
     
-    else if (y_diff < x_diff)
+    else if (y_diff_a < x_diff_a)
     {
-        ratio = x_diff / y_diff;
-        
-        while (offset_x <= x_diff)
+        counter = 0;
+        while (offset_x < x_diff_a)
         {
-            SET_PIXEL(v1.x + offset_x, v1.y + offset_y, colour);
+            SET_PIXEL(v1.x + offset_x * x_sign, v1.y + offset_y * y_sign, colour);
             offset_x++;
-            if (offset_x % ratio == 0)
-                offset_y += 1;
-            i++;
+            counter += y_diff;
+            if (counter >= x_diff)
+            {
+                offset_y++;
+                counter -= x_diff;
+            }
+        }
+    }
+    
+    else if (x_diff_a < y_diff_a)
+    {
+        counter = 0;
+        while (offset_y < y_diff_a)
+        {
+            SET_PIXEL(v1.x + offset_x * x_sign, v1.y + offset_y * y_sign, colour);
+            offset_y++;
+            counter += x_diff;
+            if (counter >= y_diff)
+            {
+                offset_x++;
+                counter -= y_diff;
+            }
         }
     }
     
     else
-    {
-        ratio = y_diff / x_diff;
-        
-        while (offset_y <= y_diff)
+    {        
+        while (offset_y <= y_diff_a && offset_x <= x_diff_a)
         {
-            SET_PIXEL(v1.x + offset_x, v1.y + offset_y, colour);
+            SET_PIXEL(v1.x + offset_x * x_sign, v1.y + offset_y * y_sign, colour);
             offset_y++;
-            if (offset_y % ratio == 0)
-                offset_x += 1;
+            offset_x++;
         }
+    }
+}
+
+void test_draw()
+{
+    char i = 0;
+    float angle = 12;
+    int radius = 90;
+    Vec2_int v1;
+    Vec2_int v2;
+    Vec2_int v3;
+    
+    while (i < 12)
+    {
+        v1.x = cos(angle) * radius + 160;
+        v1.y = sin(angle) * radius + 100;
+        v2.x = cos(angle + RAD_30) * radius + 160;
+        v2.y = sin(angle + RAD_30) * radius + 100;
+        v3.x = 160;
+        v3.y = 100;
+        draw_line_int(v1, v2, 5);
+        draw_line_int(v3, v1, 2);
+        SET_PIXEL(v1.x, v1.y, 14);
+        SET_PIXEL(v2.x, v2.y, 14);
+        angle += RAD_30;
+        i++;
     }
 }
 
@@ -667,6 +710,34 @@ void draw_polygon(Polygon* poly, int center_x, int center_y)
     draw_line(start_loc, end_loc, poly->colour);
 }
 
+void draw_polygon_int(Polygon* poly, int center_x, int center_y)
+{
+    char i = 0;
+    Vec2_int start_loc;
+    Vec2_int end_loc;
+    
+    while (i < poly->numVectors - 1)
+    {
+        start_loc.x = center_x + (int)poly->transformedV[i].x;
+        start_loc.y = center_y + (int)poly->transformedV[i].y;
+        
+        end_loc.x = center_x + (int)poly->transformedV[i + 1].x;
+        end_loc.y = center_y + (int)poly->transformedV[i + 1].y;
+
+        draw_line_int(start_loc, end_loc, poly->colour);
+        
+        i++;
+    }
+    
+    start_loc.x = center_x + (int)poly->transformedV[i].x;
+    start_loc.y = center_y + (int)poly->transformedV[i].y;
+    
+    end_loc.x = center_x + (int)poly->transformedV[0].x;
+    end_loc.y = center_y + (int)poly->transformedV[0].y;
+    
+    draw_line_int(start_loc, end_loc, poly->colour);
+}
+
 void draw_lines()
 {
     char i = 0;
@@ -692,6 +763,7 @@ void draw_polygons()
         x += 45;
         i++;
     }
+    draw_polygon_int(&poly_array[i], 60, 150);
 }
 
 void draw_stuff()
@@ -720,6 +792,7 @@ void main()
     poly_array[0] = makeSquare(0.0, 10.0, 1.0, 44);
     poly_array[1] = makePolygon(0.0, 3, 15.0, 1.0, 47);
     poly_array[2] = makePolygon(0.0, 5, 25.0, 1.0, 47);
+    poly_array[3] = makePolygon(0.0, 4, 25.0, 1.0, 47);
 
     load_font();
     set_mode(VGA_256_COLOR_MODE);
