@@ -541,32 +541,36 @@ void draw_line(Vec2 v1, Vec2 v2, uint8_t colour)
     }
 }
 
-void draw_line_int(Vec2_int v1, Vec2_int v2, uint8_t colour)
+void draw_line_int(Vec2_int p0, Vec2_int p1, uint8_t colour)
 {
     int offset_x = 0;
     int offset_y = 0;
     
-    int x_diff = (v2.x - v1.x);
-    int y_diff = (v2.y - v1.y);
-    int x_diff_a = abs(x_diff);
-    int y_diff_a = abs(y_diff);
+    int x_diff = (p1.x - p0.x);
+    int y_diff = (p1.y - p0.y);
     int counter;
+    
+    int x_diff_true = x_diff;
+    int y_diff_true = y_diff;
     
     int x_sign = SIGN(x_diff);
     int y_sign = SIGN(y_diff);
     
+    x_diff = abs(x_diff);
+    y_diff = abs(y_diff);
+    
     if (y_diff == 0)
-        draw_line_hor(v1.x, v1.y, x_diff, colour);
+        draw_line_hor(p0.x, p0.y, x_diff_true, colour);
     
     else if (x_diff == 0)
-        draw_line_ver(v1.x, v1.y, y_diff, colour);
+        draw_line_ver(p0.x, p0.y, y_diff_true, colour);
     
-    else if (y_diff_a < x_diff_a)
+    else if (y_diff < x_diff)
     {
         counter = 0;
-        while (offset_x < x_diff_a)
+        while (offset_x < x_diff)
         {
-            SET_PIXEL(v1.x + offset_x * x_sign, v1.y + offset_y * y_sign, colour);
+            SET_PIXEL(p0.x + offset_x * x_sign, p0.y + offset_y * y_sign, colour);
             offset_x++;
             counter += y_diff;
             if (counter >= x_diff)
@@ -577,12 +581,12 @@ void draw_line_int(Vec2_int v1, Vec2_int v2, uint8_t colour)
         }
     }
     
-    else if (x_diff_a < y_diff_a)
+    else if (x_diff < y_diff)
     {
         counter = 0;
-        while (offset_y < y_diff_a)
+        while (offset_y < y_diff)
         {
-            SET_PIXEL(v1.x + offset_x * x_sign, v1.y + offset_y * y_sign, colour);
+            SET_PIXEL(p0.x + offset_x * x_sign, p0.y + offset_y * y_sign, colour);
             offset_y++;
             counter += x_diff;
             if (counter >= y_diff)
@@ -595,9 +599,9 @@ void draw_line_int(Vec2_int v1, Vec2_int v2, uint8_t colour)
     
     else
     {        
-        while (offset_y <= y_diff_a && offset_x <= x_diff_a)
+        while (offset_y <= y_diff && offset_x <= x_diff)
         {
-            SET_PIXEL(v1.x + offset_x * x_sign, v1.y + offset_y * y_sign, colour);
+            SET_PIXEL(p0.x + offset_x * x_sign, p0.y + offset_y * y_sign, colour);
             offset_y++;
             offset_x++;
         }
@@ -629,6 +633,27 @@ void test_draw()
         i++;
     }
 }
+
+void interpolate_colours(int start_x, int start_y, int x_diff, uint8_t st_col, char col_spec)
+{
+    int offset_x;
+    char col_add = 0;
+    char col_step = x_diff / col_spec;
+    
+    if (x_diff < 0)
+    {
+        start_x += x_diff;
+        x_diff = abs(x_diff);
+    }
+    
+    for (offset_x = 0; offset_x < x_diff; offset_x++)
+    {
+        SET_PIXEL(start_x + offset_x, start_y, st_col + col_add);
+        if (offset_x % col_step == 0)
+            col_add++;
+    }
+}
+    
 
 Polygon makeSquare(float angle, float side_length, float scale, uint8_t colour)
 {
@@ -749,6 +774,7 @@ void draw_lines()
     }
     draw_line_int(intline_array[0].startpos, intline_array[0].endpos, line_array[0].colour);
     draw_line_int(intline_array[1].startpos, intline_array[1].endpos, line_array[1].colour);
+    interpolate_colours(100, 185, 50, 80, 10);
 }
 
 void draw_polygons()
@@ -792,7 +818,7 @@ void main()
     poly_array[0] = makeSquare(0.0, 10.0, 1.0, 44);
     poly_array[1] = makePolygon(0.0, 3, 15.0, 1.0, 47);
     poly_array[2] = makePolygon(0.0, 5, 25.0, 1.0, 47);
-    poly_array[3] = makePolygon(0.0, 4, 25.0, 1.0, 47);
+    poly_array[3] = makePolygon(0.0, 5, 25.0, 1.0, 47);
 
     load_font();
     set_mode(VGA_256_COLOR_MODE);
