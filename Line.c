@@ -37,6 +37,7 @@
 #define KEY_Q               16
 #define KEY_W               17
 #define KEY_E               18
+#define KEY_R               19
 
 #define degToRad(degree)    ((degree) * M_PI / 180.0)
 #define RAD_15              (M_PI/12)
@@ -942,6 +943,8 @@ void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge,
             edge->color[y] = (uint8_t)color;
             if (KEY_IS_PRESSED (KEY_Q))
                 SET_PIXEL(edge->offset[y], y, test_color);
+            else if (KEY_IS_PRESSED (KEY_R))
+                SET_PIXEL(edge->offset[y], y, edge->color[y]);
         }
     }
     
@@ -961,6 +964,8 @@ void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge,
             edge->color[y] = (uint8_t)color;
             if (KEY_IS_PRESSED (KEY_Q))
                 SET_PIXEL(edge->offset[y], y, test_color);
+            else if (KEY_IS_PRESSED (KEY_R))
+                SET_PIXEL(edge->offset[y], y, edge->color[y]);
         }
     }
 }
