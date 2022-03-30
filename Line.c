@@ -38,6 +38,12 @@
 #define KEY_W               17
 #define KEY_E               18
 #define KEY_R               19
+#define KEY_1               2
+#define KEY_2               3
+#define KEY_3               4
+#define KEY_4               5
+#define KEY_5               6
+#define KEY_6               7
 
 #define degToRad(degree)    ((degree) * M_PI / 180.0)
 #define RAD_15              (M_PI/12)
@@ -57,8 +63,12 @@
 #define TILE_HEIGHT         8
 #define CHARACTER_SIZE      72
 
+uint8_t *VGA=(uint8_t *)0xA0000000L;        /* this points to video memory. */
+uint8_t far screen_buf [64000];
+
 int running = 1;
 uint8_t alphabet [4240];
+uint8_t tile [10000];
 
 typedef struct
 {
@@ -115,6 +125,7 @@ typedef struct
 {
     int offset[SCREEN_HEIGHT];
     uint8_t color[SCREEN_HEIGHT];
+    Vec2 texture[SCREEN_HEIGHT];
 } Span;
 
 Span LeftEdge;
@@ -130,9 +141,6 @@ struct Input
 
 typedef struct Input Input_t;
 
-uint8_t *VGA=(uint8_t *)0xA0000000L;        /* this points to video memory. */
-uint8_t far screen_buf [64000];
-
 Input_t Input = {0};
 Input_t* g_Input = &Input;
 uint8_t* g_Keyboard = Input.kb_array;
@@ -146,6 +154,14 @@ void set_mode(uint8_t mode)
     regs.h.ah = SET_MODE;
     regs.h.al = mode;
     int86(VIDEO_INT, &regs, &regs);
+}
+
+void load_gfx(char* filename, uint8_t* destination, uint16_t data_size)
+{
+    FILE* file_ptr;
+    file_ptr = fopen(filename, "rb");
+    fread(destination, 1, data_size, file_ptr);
+    fclose(file_ptr);
 }
 
 Vec2 change_vec_angle(Vec2 vector, float angle)
@@ -331,26 +347,26 @@ void control_ingame()
     
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
-        poly_array[5].angle -= RAD_15;
-        updatePoly(&poly_array[5]);
+        poly_array[6].angle -= RAD_15;
+        updatePoly(&poly_array[6]);
     }
     
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
-        poly_array[5].angle += RAD_15;
-        updatePoly(&poly_array[5]);
+        poly_array[6].angle += RAD_15;
+        updatePoly(&poly_array[6]);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))
     {
-        poly_array[5].scale *= 1.05;
-        updatePoly(&poly_array[5]);
+        poly_array[6].scale *= 1.05;
+        updatePoly(&poly_array[6]);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
     {
-        poly_array[5].scale /= 1.05;
-        updatePoly(&poly_array[5]);
+        poly_array[6].scale /= 1.05;
+        updatePoly(&poly_array[6]);
     }
 }
 
@@ -622,21 +638,43 @@ void draw_line_int(Vec2_int p0, Vec2_int p1, uint8_t color)
 
 void drawLineHorzColorBlended(int start_x, int end_x, int start_y, uint8_t start_color, uint8_t end_color)
 {
+    float color = start_color;
+    int color_diff = end_color - start_color;
     int offset_x;
-    int x_diff = end_x - start_x;
-    uint8_t color_add = 0;
-    float color_step = (float)x_diff / abs(end_color - start_color);
-    uint8_t color_counter = 0;
+    float x_diff = end_x - start_x;
+    float color_ratio = color_diff / fabs(x_diff);
     
     for (offset_x = 0; offset_x < x_diff; offset_x++)
     {
-        SET_PIXEL(start_x + offset_x, start_y, start_color + color_add);
-        color_counter++;
-        if (color_counter > color_step && (start_color + color_add) < end_color)
-        {
-            color_add++;
-            color_counter = 0;
-        }
+        SET_PIXEL(start_x + offset_x, start_y, (uint8_t)color);
+        color += color_ratio;
+    }
+}
+
+void drawLineHorzTextured(int start_x, int end_x, int start_y, Vec2 sprite_start, Vec2 sprite_end, uint8_t* sprite)
+{
+    Vec2 uv;
+    int offset_x;
+    float u_ratio;
+    float v_ratio;
+    float x_diff = end_x - start_x;
+    float u_diff = sprite_end.x - sprite_start.x;
+    float v_diff = sprite_end.y - sprite_start.y;
+    int x, y, pixel;
+    uv.x = sprite_start.x;
+    uv.y = sprite_start.y;
+    
+    x_diff = fabs(x_diff);
+    
+    u_ratio = u_diff / x_diff;
+    v_ratio = v_diff / x_diff;
+    
+    for (offset_x = 0; offset_x < x_diff; offset_x++)
+    {
+        pixel = (int)uv.y * 100 + (int)uv.x;
+        SET_PIXEL(start_x + offset_x, start_y, sprite[pixel]);
+        uv.x += u_ratio;
+        uv.y += v_ratio;
     }
 }
 
@@ -885,7 +923,6 @@ void drawTriangleLine(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge)
     float slope = 0.0;
     
     int y_sign = SIGN(y_diff);
-    
     int x, y;
     
     y_diff = fabs(y_diff);
@@ -936,11 +973,11 @@ void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge,
         for (offset_y = 0; offset_y < y_diff; offset_y++)
         {
             offset_x = offset_y * slope;
-            color += color_ratio;
             x = (int)(center.x + p1.x + offset_x);
             y = (int)(center.y + p1.y + offset_y) * y_sign;
             edge->offset[y] = x;
             edge->color[y] = (uint8_t)color;
+            color += color_ratio;
             if (KEY_IS_PRESSED (KEY_Q))
                 SET_PIXEL(edge->offset[y], y, test_color);
             else if (KEY_IS_PRESSED (KEY_R))
@@ -951,21 +988,87 @@ void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge,
     else if (x_diff > y_diff)
     {
         x_diff = fabs(x_diff);
-        color_ratio =  color_diff / x_diff;
+        color_ratio = color_diff / x_diff;
         slope = y_diff / x_diff;
             
         for (offset_x = 0; offset_x < x_diff; offset_x++)
         {
             offset_y = offset_x * slope;
-            color += color_ratio;
             x = (int)(center.x + p1.x + offset_x);
             y = (int)(center.y + p1.y + offset_y) * y_sign;
             edge->offset[y] = x;
             edge->color[y] = (uint8_t)color;
+            color += color_ratio;
             if (KEY_IS_PRESSED (KEY_Q))
                 SET_PIXEL(edge->offset[y], y, test_color);
             else if (KEY_IS_PRESSED (KEY_R))
                 SET_PIXEL(edge->offset[y], y, edge->color[y]);
+        }
+    }
+}
+
+void drawTriangleLineTexture(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, Vec2 tex_start, Vec2 tex_end)
+{
+    Vec2 uv;
+    
+    float offset_y;
+    float offset_x;
+    
+    float x_diff = (p2.x - p1.x);
+    float y_diff = (p2.y - p1.y);
+    float u_diff = (tex_end.x - tex_start.x);
+    float v_diff = (tex_end.y - tex_start.y);
+    
+    float u_ratio;
+    float v_ratio;
+    
+    float slope = 0.0;
+    
+    int y_sign = SIGN(y_diff);
+    int x, y;
+    
+    uv.x = tex_start.x;
+    uv.y = tex_start.y;
+    
+    if (y_diff > x_diff)
+    {
+        y_diff = fabs(y_diff);
+        slope = x_diff / y_diff;
+        
+        u_ratio = u_diff / y_diff;
+        v_ratio = v_diff / y_diff;
+            
+        for (offset_y = 0; offset_y < y_diff; offset_y++)
+        {
+            offset_x = offset_y * slope;
+            x = (int)(center.x + p1.x + offset_x);
+            y = (int)(center.y + p1.y + offset_y) * y_sign;
+            edge->offset[y] = x;
+            edge->texture[y].x = uv.x;
+            edge->texture[y].y = uv.y;
+            uv.x += u_ratio;
+            uv.y += v_ratio;
+        }
+    }
+    
+    else if (x_diff > y_diff)
+    {
+        x_diff = fabs(x_diff);
+        slope = y_diff / x_diff;
+        
+        u_ratio = u_diff / x_diff;
+        v_ratio = v_diff / x_diff;
+            
+        for (offset_x = 0; offset_x < x_diff; offset_x++)
+        {
+            offset_y = offset_x * slope;
+            x = (int)(center.x + p1.x + offset_x);
+            y = (int)(center.y + p1.y + offset_y) * y_sign;
+            edge->offset[y] = x;
+            edge->texture[y].x = uv.x;
+            edge->texture[y].y = uv.y;
+            uv.x += u_ratio;
+            uv.y += v_ratio;
         }
     }
 }
@@ -978,17 +1081,10 @@ void fillSpans(int top, int bottom, uint8_t color)
     for (line = top; line < bottom; line++)
     {
         draw_line_hor(LeftEdge.offset[line], line, (RightEdge.offset[line] - LeftEdge.offset[line]), color);
-        /*
-        p0.y = line;
-        p1.y = line;
-        p0.x = LeftEdge.offset[line];
-        p1.x = RightEdge.offset[line];
-        
-        drawLineColorBlended(p0, p1, 64, 95);*/
     }
 }
 
-void interpolateSpans(int top, int bottom)
+void fillSpansColorBlended(int top, int bottom)
 {
     int line;
     Vec2 p0, p1;
@@ -1008,6 +1104,27 @@ void interpolateSpans(int top, int bottom)
     }
 }
 
+void fillSpansTextured(int top, int bottom, uint8_t* sprite)
+{
+    int line;
+    Vec2 p0, p1;
+    Vec2 tex_start;
+    Vec2 tex_end;
+
+    for (line = top; line < bottom; line++)
+    {
+        p0.x = LeftEdge.offset[line];
+        p1.x = RightEdge.offset[line];
+        
+        tex_start.x = LeftEdge.texture[line].x;
+        tex_start.y = LeftEdge.texture[line].y;
+        tex_end.x = RightEdge.texture[line].x;
+        tex_end.y = RightEdge.texture[line].y;
+        
+        drawLineHorzTextured(p0.x, p1.x, line, tex_start, tex_end, sprite);
+    }
+}
+
 void sortPair(Vec2* v0, Vec2* v1)
 {
     Vec2 temp;
@@ -1020,7 +1137,7 @@ void sortPair(Vec2* v0, Vec2* v1)
     }
 }
 
-void sortPairWithcolor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
+void sortPairWithColor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
 {
     Vec2 temp;
     uint8_t color_temp;
@@ -1033,6 +1150,22 @@ void sortPairWithcolor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
         *color1 = *color2;
         *v1 = temp;
         *color2 = color_temp;
+    }
+}
+
+void sortPairWithPoint(Vec2* v0, Vec2* v1, Vec2* p0, Vec2* p1)
+{
+    Vec2 temp;
+    Vec2 point_temp;
+    
+    if (v0->y > v1->y)
+    {
+        temp = *v0;
+        point_temp = *p0;
+        *v0 = *v1;
+        *p0 = *p1;
+        *v1 = temp;
+        *p1 = point_temp;
     }
 }
 
@@ -1086,13 +1219,31 @@ void drawShadedTriangle(Polygon* triangle)
     B = triangle->transformedV[1];
     C = triangle->transformedV[2];
     
+    if (KEY_IS_PRESSED (KEY_1))
+        triangle->vertexColors[0]++;
+    
+    else if (KEY_IS_PRESSED (KEY_2))
+        triangle->vertexColors[1]++;
+    
+    else if (KEY_IS_PRESSED (KEY_3))
+        triangle->vertexColors[2]++;
+    
+    else if (KEY_IS_PRESSED (KEY_4))
+        triangle->vertexColors[0]--;
+    
+    else if (KEY_IS_PRESSED (KEY_5))
+        triangle->vertexColors[1]--;
+    
+    else if (KEY_IS_PRESSED (KEY_6))
+        triangle->vertexColors[2]--;
+    
     A_color = triangle->vertexColors[0];
     B_color = triangle->vertexColors[1];
     C_color = triangle->vertexColors[2];
     
-    sortPairWithcolor(&A, &B, &A_color, &B_color);
-    sortPairWithcolor(&A, &C, &A_color, &C_color);
-    sortPairWithcolor(&B, &C, &B_color, &C_color);
+    sortPairWithColor(&A, &B, &A_color, &B_color);
+    sortPairWithColor(&A, &C, &A_color, &C_color);
+    sortPairWithColor(&B, &C, &B_color, &C_color);
     
     AB.x = B.x - A.x;
     AB.y = B.y - A.y;
@@ -1113,8 +1264,48 @@ void drawShadedTriangle(Polygon* triangle)
         drawTriangleLineColorBlended(B, C, center, &LeftEdge, B_color, C_color);
         drawTriangleLineColorBlended(A, C, center, &RightEdge, A_color, C_color);
     }
-    if (KEY_IS_PRESSED (KEY_W))
-        interpolateSpans(center.y + A.y, center.y + C.y);
+    //if (KEY_IS_PRESSED (KEY_W))
+    fillSpansColorBlended(center.y + A.y, center.y + C.y);
+}
+
+void drawTexturedTriangle(Polygon* triangle)
+{    
+    Vec2 A, B, C;
+    Vec2 AB, AC;
+    Vec2_int center = {159, 99};
+    Vec2 point_a = {50.0, 10.0};
+    Vec2 point_b = {20.0, 70.0};
+    Vec2 point_c = {80.0, 70.0};
+    float cross_product;
+    
+    A = triangle->transformedV[0];
+    B = triangle->transformedV[1];
+    C = triangle->transformedV[2];
+    
+    sortPairWithPoint(&A, &B, &point_a, &point_b);
+    sortPairWithPoint(&A, &C, &point_a, &point_c);
+    sortPairWithPoint(&B, &C, &point_b, &point_c);
+    
+    AB.x = B.x - A.x;
+    AB.y = B.y - A.y;
+    AC.x = C.x - A.x;
+    AC.y = C.y - A.y;
+    
+    cross_product = (AB.x * AC.y) - (AB.y * AC.x);
+    
+    if (cross_product > 0)
+    {
+        drawTriangleLineTexture(A, B, center, &RightEdge, point_a, point_b);
+        drawTriangleLineTexture(B, C, center, &RightEdge, point_b, point_c);
+        drawTriangleLineTexture(A, C, center, &LeftEdge, point_a, point_c);
+    }
+    else
+    {
+        drawTriangleLineTexture(A, B, center, &LeftEdge, point_a, point_b);
+        drawTriangleLineTexture(B, C, center, &LeftEdge, point_b, point_c);
+        drawTriangleLineTexture(A, C, center, &RightEdge, point_a, point_c);
+    }
+    fillSpansTextured(center.y + A.y, center.y + C.y, tile);
 }
 
 void draw_polygon(Polygon* poly, int center_x, int center_y)
@@ -1209,8 +1400,9 @@ void draw_stuff()
     //draw_lines();
     //draw_polygons();
     //test_draw();
-    drawFilledTriangle(&poly_array[5]);
-    drawShadedTriangle(&poly_array[5]);
+    //drawFilledTriangle(&poly_array[5]);
+    //drawShadedTriangle(&poly_array[5]);
+    drawTexturedTriangle(&poly_array[6]);
 }
 
 void render()
@@ -1236,8 +1428,10 @@ void main()
     poly_array[3] = makePolygon(0.0, 5, 25.0, 1.0, 47);
     poly_array[4] = makePolygon(0.0, 3, 15.0, 1.0, 47);
     poly_array[5] = makeShadedTriangle(0.0, 3, 15.0, 1.0, 16, 23, 31);
+    poly_array[6] = makePolygon(0.0, 3, 15.0, 1.0, 47);
 
     load_font();
+    load_gfx("WALL.7UP", tile, 10000);
     set_mode(VGA_256_COLOR_MODE);
     init_keyboard();
     
