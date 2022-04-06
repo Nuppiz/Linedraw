@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <math.h>
 
+#define TRUE 1
+#define FALSE 0
+
 #define VIDEO_INT           0x10      /* the BIOS video interrupt. */
 #define SET_MODE            0x00      /* BIOS func to set the video mode. */
 #define VGA_256_COLOR_MODE  0x13      /* use to set 256-color mode. */
@@ -12,6 +15,7 @@
 #define SCREEN_WIDTH        320       /* width in pixels of mode 0x13 */
 #define SCREEN_HEIGHT       200       /* height in pixels of mode 0x13 */
 #define NUM_COLORS          256       /* number of colors in mode 0x13 */
+#define TRANSPARENT_COLOR   251
 
 #define SET_PIXEL(x,y,color)      screen_buf[(y)*SCREEN_WIDTH + (x)] = color
 #define SIGN(x)                   (((x) < 0) ? -1 : (((x) > 0) ? 1 : 0))
@@ -51,17 +55,24 @@
 #define RAD_45              (M_PI/4)
 #define RAD_60              (M_PI/3)
 #define RAD_90              (M_PI/2)
-#define RAD_120             (M_PI/1.5)
+#define RAD_135             (M_PI/1.5)
+#define RAD_180             (M_PI)
 #define RAD_240             (1.5*M_PI)
 #define RAD_360             (2*M_PI)
+
+#define TURN_RATE           (M_PI/50)
  
 #define X_AXIS              1
 #define Y_AXIS              2
+#define modObject           mesh_array[0]
 
 #define SCREEN_SIZE         64000
 #define TILE_WIDTH          8
 #define TILE_HEIGHT         8
 #define CHARACTER_SIZE      72
+#define RGB(color)          (color.r, color.g, color.b)
+#define PALETTE_WRITE       0x03C8
+#define PALETTE_DATA        0x03C9
 
 uint8_t *VGA=(uint8_t *)0xA0000000L;        /* this points to video memory. */
 uint8_t far screen_buf [64000];
@@ -69,6 +80,7 @@ uint8_t far screen_buf [64000];
 int running = 1;
 uint8_t alphabet [4240];
 uint8_t tile [10000];
+uint8_t car [2048];
 
 typedef struct
 {
@@ -97,14 +109,53 @@ typedef struct
 typedef struct
 {
     float angle;
-    Vec2* vertices;
+    Vec2* points;
     Vec2* transformedV;
-    int numVertices;
+    int numPoints;
     float radius;
     float scale;
     uint8_t color;
     uint8_t* vertexColors;
+    Vec2* UVCoords;
+    Vec2_int center;
 } Polygon;
+
+typedef struct
+{
+    int pointID;
+    Vec2 UV;
+} Vertex;
+
+typedef struct
+{
+    uint8_t* pixels;
+    int height;
+    int width;
+    uint8_t transparent;
+} Texture;
+
+typedef struct
+{
+    float angle;
+    float scale;
+    int numPoints;
+    Vec2* points;
+    Vec2* transformedP;
+    int numTriangles;
+    Vertex* triangleVertices;
+    Vec2_int center;
+    Texture* texture;
+} Mesh2D;
+
+typedef struct
+{
+    uint8_t r,g,b;
+} Color;
+
+typedef struct
+{
+    Color colors[256];
+} Palette;
 
 Line line_array[5] = {
     {{40.0,  50.0}, {20.0, 40.0}, 41},
@@ -120,6 +171,7 @@ Line_int intline_array[2] = {
 };
 
 Polygon poly_array[10];
+Mesh2D mesh_array[10];
 
 typedef struct
 {
@@ -130,6 +182,11 @@ typedef struct
 
 Span LeftEdge;
 Span RightEdge;
+
+Palette NewPalette;
+
+Texture CarTex;
+Mesh2D CarMesh;
 
 struct Input
 {
@@ -156,12 +213,161 @@ void set_mode(uint8_t mode)
     int86(VIDEO_INT, &regs, &regs);
 }
 
+// loads the palette from a 256-colour bitmap file
+void loadPalette(char* filename, Palette* pal)
+{
+    FILE *fp;
+    int i, x;
+    
+    // Open the file
+    fp = fopen(filename, "rb");
+    
+    // skip forward and read the number of colours
+    fseek(fp, 0x0036, SEEK_SET);
+    
+    // load palette
+    for (i = 0; i < 256; i++)
+    {
+        uint8_t r,g,b;
+        // VGA palette values only go up to 6 bits, (2 ^ 6 == 64 different shades)
+        // while bitmap palettes go up to 8 bits, (2 ^ 8 == 256 different shades)
+        // right shift (>>) the bits by two places so an 8-bit value becomes a 6-bit
+        // this divides the shade value (0-255) by four, giving a value between 0-63
+  
+        pal->colors[i].b = fgetc(fp);
+        pal->colors[i].g = fgetc(fp);
+        pal->colors[i].r = fgetc(fp);
+
+        x = fgetc(fp); // discarded  value
+    }
+
+    fclose(fp);
+}
+
+void setPalette_VGA(Palette* pal)
+{
+    unsigned i;
+    outportb(PALETTE_WRITE, 0);
+
+    for (i = 0; i < 256; i++)
+    {
+       outportb(PALETTE_DATA, (pal->colors[i].r>>2));
+       outportb(PALETTE_DATA, (pal->colors[i].g>>2));
+       outportb(PALETTE_DATA, (pal->colors[i].b>>2));
+    }
+}
+
 void load_gfx(char* filename, uint8_t* destination, uint16_t data_size)
 {
     FILE* file_ptr;
     file_ptr = fopen(filename, "rb");
     fread(destination, 1, data_size, file_ptr);
     fclose(file_ptr);
+}
+
+void load_texture(char* filename, Texture* texture, int width, int height, int transparent)
+{
+    FILE* file_ptr;
+    file_ptr = fopen(filename, "rb");
+    texture->pixels = malloc(width * height);
+    fread(texture->pixels, 1, width * height, file_ptr);
+    texture->height = height;
+    texture->width = width;
+    texture->transparent = transparent;
+    fclose(file_ptr);
+}
+
+void draw_sprite(int x, int y, Texture* texture)
+{
+    int pix_x = x;
+    int pix_y = y;
+    int index_x = 0;
+    int index_y = 0;
+    int i = 0;
+
+    if (texture->transparent == TRUE)
+    {
+        for (index_y=0;index_y<texture->height;index_y++)
+        {
+            for (index_x=0;index_x<texture->width;index_x++)
+            {
+                if (texture->pixels[i] != TRANSPARENT_COLOR)
+                {
+                    SET_PIXEL(pix_x, pix_y, texture->pixels[i]);
+                    i++;
+                    pix_x++;
+                }
+                else
+                {
+                    i++;
+                    pix_x++;
+                }
+            }
+            index_x = 0;
+            pix_x = x;
+            pix_y++;
+        }
+    }
+    else
+    {
+        for (index_y=0;index_y<texture->height;index_y++)
+        {
+            for (index_x=0;index_x<texture->width;index_x++)
+            {
+                SET_PIXEL(pix_x, pix_y, texture->pixels[i]);
+                i++;
+                pix_x++;
+            }
+            index_x = 0;
+            pix_x = x;
+            pix_y++;
+        }
+    }
+}
+
+void MakeCarMesh(Mesh2D* carmesh)
+{
+    carmesh->angle = 0.0;
+    carmesh->scale = 1.0;
+    carmesh->center.x = 159;
+    carmesh->center.y = 99;
+
+    carmesh->numPoints = 4;
+    carmesh->points = malloc(carmesh->numPoints * sizeof(Vec2));
+    carmesh->points[0].x = -32;
+    carmesh->points[0].y = -64;
+    carmesh->points[1].x = 32;
+    carmesh->points[1].y = -64;
+    carmesh->points[2].x = 32;
+    carmesh->points[2].y = 64;
+    carmesh->points[3].x = -32;
+    carmesh->points[3].y = 64;
+
+    carmesh->transformedP = malloc(carmesh->numPoints * sizeof(Vec2));
+    memcpy(carmesh->transformedP, carmesh->points, sizeof(Vec2) * carmesh->numPoints);
+
+    carmesh->texture = &CarTex;
+    carmesh->numTriangles = 2;
+
+    carmesh->triangleVertices = malloc((carmesh->numTriangles * 3) * sizeof(Vertex));
+    carmesh->triangleVertices[0].pointID = 0;
+    carmesh->triangleVertices[0].UV.x = 0;
+    carmesh->triangleVertices[0].UV.y = 0;
+    carmesh->triangleVertices[1].pointID = 1;
+    carmesh->triangleVertices[1].UV.x = 32;
+    carmesh->triangleVertices[1].UV.y = 0;
+    carmesh->triangleVertices[2].pointID = 3;
+    carmesh->triangleVertices[2].UV.x = 0;
+    carmesh->triangleVertices[2].UV.y = 64;
+    carmesh->triangleVertices[3].pointID = 1;
+    carmesh->triangleVertices[3].UV.x = 32;
+    carmesh->triangleVertices[3].UV.y = 0;
+    carmesh->triangleVertices[4].pointID = 2;
+    carmesh->triangleVertices[4].UV.x = 32;
+    carmesh->triangleVertices[4].UV.y = 64;
+    carmesh->triangleVertices[5].pointID = 3;
+    carmesh->triangleVertices[5].UV.x = 0;
+    carmesh->triangleVertices[5].UV.y = 64;
 }
 
 Vec2 change_vec_angle(Vec2 vector, float angle)
@@ -194,7 +400,7 @@ void change_poly_angles(Polygon* poly, float angle)
 {
     char i;
     
-    for (i = 0; i < poly->numVertices; i++)
+    for (i = 0; i < poly->numPoints; i++)
     {
         poly->transformedV[i] = change_vec_angle(poly->transformedV[i], angle);
     }
@@ -204,7 +410,7 @@ void change_poly_size(Polygon* poly, float scale)
 {
     char i;
     
-    for (i = 0; i < poly->numVertices; i++)
+    for (i = 0; i < poly->numPoints; i++)
     {
         poly->transformedV[i] = change_vec_scale(poly->transformedV[i], scale);
     }
@@ -220,16 +426,39 @@ void updatePoly(Polygon* poly)
     float new_x;
     float new_y;
     
-    for (i = 0; i < poly->numVertices; i++)
+    for (i = 0; i < poly->numPoints; i++)
     {
-        old_x = poly->vertices[i].x;
-        old_y = poly->vertices[i].y;
+        old_x = poly->points[i].x;
+        old_y = poly->points[i].y;
         cos_angle = cos(poly->angle);
         sin_angle = sin(poly->angle);
         new_x = (old_x * cos_angle - old_y * sin_angle) * poly->scale;
         new_y = (old_x * sin_angle + old_y * cos_angle) * poly->scale;
         poly->transformedV[i].x = new_x;
         poly->transformedV[i].y = new_y;
+    }
+}
+
+void updateMesh(Mesh2D* mesh)
+{
+    char i;
+    float cos_angle;
+    float sin_angle;
+    float old_x;
+    float old_y;
+    float new_x;
+    float new_y;
+    
+    for (i = 0; i < mesh->numPoints; i++)
+    {
+        old_x = mesh->points[i].x;
+        old_y = mesh->points[i].y;
+        cos_angle = cos(mesh->angle);
+        sin_angle = sin(mesh->angle);
+        new_x = (old_x * cos_angle - old_y * sin_angle) * mesh->scale;
+        new_y = (old_x * sin_angle + old_y * cos_angle) * mesh->scale;
+        mesh->transformedP[i].x = new_x;
+        mesh->transformedP[i].y = new_y;
     }
 }
 
@@ -347,26 +576,34 @@ void control_ingame()
     
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
-        poly_array[6].angle -= RAD_15;
-        updatePoly(&poly_array[6]);
+        modObject.angle -= TURN_RATE;
+        //poly_array[7].angle -= RAD_15;
+        updateMesh(&modObject);
+        //updatePoly(&poly_array[7]);
     }
     
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
-        poly_array[6].angle += RAD_15;
-        updatePoly(&poly_array[6]);
+        modObject.angle += TURN_RATE;
+        //poly_array[7].angle += RAD_15;
+        updateMesh(&modObject);
+        //updatePoly(&poly_array[7]);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))
     {
-        poly_array[6].scale *= 1.05;
-        updatePoly(&poly_array[6]);
+        modObject.scale *= 1.05;
+        poly_array[5].scale *= 1.05;
+        updateMesh(&modObject);
+        //updatePoly(&poly_array[7]);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
     {
-        poly_array[6].scale /= 1.05;
-        updatePoly(&poly_array[6]);
+        modObject.scale /= 1.05;
+        poly_array[5].scale /= 1.05;
+        updateMesh(&modObject);
+        //updatePoly(&poly_array[7]);
     }
 }
 
@@ -636,6 +873,128 @@ void draw_line_int(Vec2_int p0, Vec2_int p1, uint8_t color)
     }
 }
 
+void plotTriangleLineColorBlendedInt(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, uint8_t start_color, uint8_t end_color)
+{
+	int offset;
+	int counter;
+    int x = (int)(p1.x + 0.5) + center.x;
+	int y = (int)(p1.y + 0.5) + center.y;
+    int x_diff = (int)(p2.x - p1.x + 0.5);
+    int y_diff = (int)(p2.y - p1.y + 0.5);
+    int x_sign = SIGN(x_diff);
+	int y_sign = SIGN(y_diff);
+	
+    int color = start_color;
+    int color_diff = end_color - start_color;
+	int color_sign = SIGN(color_diff);
+	int color_counter;
+	
+	x_diff = abs(x_diff);
+	y_diff = abs(y_diff);
+	color_diff = abs(color_diff);
+	
+    if (y_diff > x_diff)
+    {
+		color_counter = y_diff/2;
+		// beginning at y_diff/2 instead of 0 fixes a minor inaccuracy
+        for (offset = 0; offset < y_diff; offset++)
+        {
+            edge->offset[y] = x;
+            edge->color[y] = (uint8_t)color;
+			// move along the y coordinate
+			y += y_sign;
+			// check whether to move on the y coordinate
+			counter += x_diff;
+			while (counter > y_diff)
+			{
+				counter -= y_diff;
+				x += x_sign;
+			}
+			// check whether to step the color value forwards
+			color_counter += color_diff;
+			while (color_counter > y_diff)
+			{
+				color_counter -= y_diff;
+				color += color_sign;
+			}
+        }
+    }
+    else if (x_diff > y_diff)
+    {
+		color_counter = x_diff/2;
+		// beginning at x_diff/2 instead of 0 fixes a minor inaccuracy	
+        for (offset = 0; offset < x_diff; offset++)
+        {
+            edge->offset[y] = x;
+            edge->color[y] = (uint8_t)color;
+			// move along the x coordinate
+			x += x_sign;
+			// check whether to move on the y coordinate
+			counter += y_diff;
+			while (counter > x_diff)
+			{
+				counter -= x_diff;
+				y += y_sign;
+			}
+			// check whether to step the color value forwards
+			color_counter += color_diff;
+			while (color_counter > x_diff)
+			{
+				color_counter -= x_diff;
+				color += color_sign;
+			}
+        }
+    }
+}
+
+void drawLineHorzColorBlendedInt(int start_x, int end_x, int y, uint8_t start_color, uint8_t end_color)
+{    
+	int x = start_x;
+	int offset_x;
+    int x_diff = end_x - start_x;
+    int x_sign = SIGN(x_diff);
+
+    int color = start_color;
+    int color_diff = end_color - start_color;
+	int color_sign = SIGN(color_diff);
+	int color_counter;
+	// beginning at x_diff/2 instead of 0 fixes a minor inaccuracy
+	
+	x_diff = abs(x_diff);
+	color_diff = abs(color_diff);
+	color_counter = x_diff/2;
+	
+    for (offset_x = 0; offset_x < x_diff; offset_x++)
+    {
+        SET_PIXEL(x, y, (uint8_t)color);
+		x += x_sign;
+		// check whether to step the color value forwards
+        color_counter += color_diff;
+		while (color_counter > x_diff)
+		{
+			color_counter -= x_diff;
+			color += color_sign;
+		}
+    }
+}
+
+void fillSpansColorBlendedInt(int top, int bottom)
+{
+    int line, start_x, end_x;
+    uint8_t start_color, end_color;
+    
+    for (line = top; line < bottom; line++)
+    {
+        start_x 	= (int)LeftEdge.offset[line];
+        end_x 		= (int)RightEdge.offset[line];
+        start_color = LeftEdge.color[line];
+        end_color 	= RightEdge.color[line];
+        
+        drawLineHorzColorBlendedInt(start_x, end_x, line,
+									start_color, end_color);
+    }
+}
+
 void drawLineHorzColorBlended(int start_x, int end_x, int start_y, uint8_t start_color, uint8_t end_color)
 {
     float color = start_color;
@@ -666,16 +1025,76 @@ void drawLineHorzTextured(int start_x, int end_x, int start_y, Vec2 sprite_start
     
     x_diff = fabs(x_diff);
     
-    u_ratio = u_diff / x_diff;
-    v_ratio = v_diff / x_diff;
+	if (x_diff != 0.0)
+	{
+		u_ratio = u_diff / x_diff;
+		v_ratio = v_diff / x_diff;
+
+		for (offset_x = 0; offset_x < x_diff; offset_x++)
+		{
+			pixel = (int)uv.y * 100 + (int)uv.x;
+			SET_PIXEL(start_x + offset_x, start_y, sprite[pixel]);
+			uv.x += u_ratio;
+			uv.y += v_ratio;
+		}
+	}
+}
+
+void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_start, Vec2 tex_end, Texture* texture)
+{
+    Vec2 uv;
+    int offset_x;
+    float u_ratio;
+    float v_ratio;
+    float x_diff = end_x - start_x;
+    float u_diff = tex_end.x - tex_start.x;
+    float v_diff = tex_end.y - tex_start.y;
+	int tex_x_mask = texture->width-1; // Caution: This assumes texture dimensions
+	int tex_y_mask = texture->height-1; // are powers of 2! Shit breaks otherwise
+    int x, y, pixel;
+    uint8_t color;
+    uv.x = tex_start.x;
+    uv.y = tex_start.y;
+	start_x++;
     
-    for (offset_x = 0; offset_x < x_diff; offset_x++)
-    {
-        pixel = (int)uv.y * 100 + (int)uv.x;
-        SET_PIXEL(start_x + offset_x, start_y, sprite[pixel]);
-        uv.x += u_ratio;
-        uv.y += v_ratio;
-    }
+    x_diff = fabs(x_diff);
+    
+	if (x_diff != 0)
+	{
+	    u_ratio = u_diff / x_diff;
+	    v_ratio = v_diff / x_diff;
+	
+	    
+	    if (texture->transparent == TRUE)
+	    {
+	        for (offset_x = 0; offset_x < x_diff; offset_x++)
+	        {
+	            //pixel = (((int)uv.y) % texture->height) * texture->width
+				//		+ (((int)uv.x) % texture->width);
+	            pixel = (((int)uv.y) & tex_y_mask) * texture->width
+						+ (((int)uv.x) & tex_x_mask);
+	            color = texture->pixels[pixel];
+	            if (color != TRANSPARENT_COLOR)
+	                SET_PIXEL(start_x + offset_x, start_y, color);
+	            uv.x += u_ratio;
+	            uv.y += v_ratio;
+	        }
+	    }
+	    else
+	    {
+	        for (offset_x = 0; offset_x < x_diff; offset_x++)
+	        {
+	            //pixel = (((int)uv.y) % texture->height) * texture->width
+				//		+ (((int)uv.x) % texture->width);
+	            pixel = (((int)uv.y) & tex_y_mask) * texture->width
+						+ (((int)uv.x) & tex_x_mask);
+	            color = texture->pixels[pixel];
+	            SET_PIXEL(start_x + offset_x, start_y, color);
+	            uv.x += u_ratio;
+	            uv.y += v_ratio;
+	        }
+	    }
+	}
 }
 
 void drawLineColorBlended(Vec2 p0, Vec2 p1, uint8_t st_col, uint8_t end_col)
@@ -687,6 +1106,7 @@ void drawLineColorBlended(Vec2 p0, Vec2 p1, uint8_t st_col, uint8_t end_col)
     int y_diff = (p1.y - p0.y);
     
     int length = sqrt((abs(x_diff) * abs(x_diff)) + (abs(y_diff) * abs(y_diff)));
+	// why the fuck do you take square root here lmao wtffbbq XDXDSDDD
     uint8_t col_add = 0;
     uint8_t col_step = length / abs(end_col - st_col);
     uint8_t col_counter = 0;
@@ -831,72 +1251,72 @@ Polygon makeSquare(float angle, float side_length, float scale, uint8_t color)
 {
     Polygon newSquare;
     
-    newSquare.numVertices = 4;
-    newSquare.vertices = malloc(newSquare.numVertices * sizeof(Vec2));
-    newSquare.transformedV = malloc(newSquare.numVertices * sizeof(Vec2));
+    newSquare.numPoints = 4;
+    newSquare.points = malloc(newSquare.numPoints * sizeof(Vec2));
+    newSquare.transformedV = malloc(newSquare.numPoints * sizeof(Vec2));
     newSquare.angle = angle;
     newSquare.scale = scale;
     newSquare.color = color;
     
-    newSquare.vertices[0].x = -side_length/2.0;
-    newSquare.vertices[0].y = -side_length/2.0;
-    newSquare.vertices[1].x = side_length/2.0;
-    newSquare.vertices[1].y = -side_length/2.0;
-    newSquare.vertices[2].x = side_length/2.0;
-    newSquare.vertices[2].y = side_length/2.0;
-    newSquare.vertices[3].x = -side_length/2.0;
-    newSquare.vertices[3].y = side_length/2.0;
+    newSquare.points[0].x = -side_length/2.0;
+    newSquare.points[0].y = -side_length/2.0;
+    newSquare.points[1].x = side_length/2.0;
+    newSquare.points[1].y = -side_length/2.0;
+    newSquare.points[2].x = side_length/2.0;
+    newSquare.points[2].y = side_length/2.0;
+    newSquare.points[3].x = -side_length/2.0;
+    newSquare.points[3].y = side_length/2.0;
     
-    memcpy(newSquare.transformedV, newSquare.vertices, sizeof(Vec2) * newSquare.numVertices);
+    memcpy(newSquare.transformedV, newSquare.points, sizeof(Vec2) * newSquare.numPoints);
     
     return newSquare;
 }
 
-Polygon makePolygon(float angle, int numVertices, float radius, float scale, uint8_t color)
+Polygon makePolygon(float angle, int numPoints, float radius, float scale, uint8_t color)
 {
     Polygon newPolygon;
     char i = 0;
-    float angle_step = RAD_360/numVertices;
+    float angle_step = RAD_360/numPoints;
     
-    newPolygon.numVertices = numVertices;
-    newPolygon.vertices = malloc(numVertices * sizeof(Vec2));
-    newPolygon.transformedV = malloc(numVertices * sizeof(Vec2));
+    newPolygon.numPoints = numPoints;
+    newPolygon.points = malloc(numPoints * sizeof(Vec2));
+    newPolygon.transformedV = malloc(numPoints * sizeof(Vec2));
     newPolygon.angle = angle;
     newPolygon.radius = radius;
     newPolygon.scale = scale;
     newPolygon.color = color;
     
-    while (i < newPolygon.numVertices)
+    while (i < newPolygon.numPoints)
     {
-        newPolygon.vertices[i].x = cos((angle_step + angle) * (i + 1)) * radius;
-        newPolygon.vertices[i].y = sin((angle_step + angle) * (i + 1)) * radius;
+        newPolygon.points[i].x = cos((angle_step + angle) * (i + 1)) * radius;
+        newPolygon.points[i].y = sin((angle_step + angle) * (i + 1)) * radius;
         
         i++;
     }
     
-    memcpy(newPolygon.transformedV, newPolygon.vertices, sizeof(Vec2) * newPolygon.numVertices);
+    memcpy(newPolygon.transformedV, newPolygon.points, sizeof(Vec2) * newPolygon.numPoints);
     
     return newPolygon;
 }
 
-Polygon makeShadedTriangle(float angle, int numVertices, float radius, float scale, uint8_t col_1, uint8_t col_2, uint8_t col_3)
+Polygon makeShadedTriangle(float angle, int numPoints, float radius, float scale, uint8_t col_1, uint8_t col_2, uint8_t col_3)
 {
     Polygon newPolygon;
     char i = 0;
-    float angle_step = RAD_360/numVertices;
+    float angle_step = RAD_360/numPoints;
     
-    newPolygon.numVertices = numVertices;
-    newPolygon.vertices = malloc(numVertices * sizeof(Vec2));
-    newPolygon.transformedV = malloc(numVertices * sizeof(Vec2));
+    newPolygon.numPoints = numPoints;
+    newPolygon.points = malloc(numPoints * sizeof(Vec2));
+    newPolygon.transformedV = malloc(numPoints * sizeof(Vec2));
     newPolygon.vertexColors = malloc(3 * sizeof(uint8_t));
     newPolygon.angle = angle;
     newPolygon.radius = radius;
     newPolygon.scale = scale;
     
-    while (i < newPolygon.numVertices)
+    while (i < newPolygon.numPoints)
     {
-        newPolygon.vertices[i].x = cos((angle_step + angle) * (i + 1)) * radius;
-        newPolygon.vertices[i].y = sin((angle_step + angle) * (i + 1)) * radius;
+        newPolygon.points[i].x = cos((angle_step + angle) * (i + 1)) * radius;
+        newPolygon.points[i].y = sin((angle_step + angle) * (i + 1)) * radius;
         
         i++;
     }
@@ -905,12 +1325,45 @@ Polygon makeShadedTriangle(float angle, int numVertices, float radius, float sca
     newPolygon.vertexColors[1] = col_2;
     newPolygon.vertexColors[2] = col_3;
     
-    memcpy(newPolygon.transformedV, newPolygon.vertices, sizeof(Vec2) * newPolygon.numVertices);
+    memcpy(newPolygon.transformedV, newPolygon.points, sizeof(Vec2) * newPolygon.numPoints);
     
     return newPolygon;
 }
 
-void drawTriangleLine(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge)
+Polygon makeTexturedTriangle(float angle, int numPoints, float radius, float scale, Vec2 uv_1, Vec2 uv_2, Vec2 uv_3, Vec2_int center)
+{
+    Polygon newPolygon;
+    char i = 0;
+    float angle_step = RAD_360/numPoints;
+    
+    newPolygon.numPoints = numPoints;
+    newPolygon.points = malloc(numPoints * sizeof(Vec2));
+    newPolygon.transformedV = malloc(numPoints * sizeof(Vec2));
+    newPolygon.UVCoords = malloc(3 * sizeof(Vec2));
+    newPolygon.angle = angle;
+    newPolygon.radius = radius;
+    newPolygon.scale = scale;
+    newPolygon.center.x = center.x;
+    newPolygon.center.y = center.y;
+    
+    while (i < newPolygon.numPoints)
+    {
+        newPolygon.points[i].x = cos((angle_step + angle) * (i + 1)) * radius;
+        newPolygon.points[i].y = sin((angle_step + angle) * (i + 1)) * radius;
+        
+        i++;
+    }
+    
+    newPolygon.UVCoords[0] = uv_1;
+    newPolygon.UVCoords[1] = uv_2;
+    newPolygon.UVCoords[2] = uv_3;
+    
+    memcpy(newPolygon.transformedV, newPolygon.points, sizeof(Vec2) * newPolygon.numPoints);
+    
+    return newPolygon;
+}
+
+void plotTriangleLine(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge)
 {
     uint8_t color;
     
@@ -939,7 +1392,7 @@ void drawTriangleLine(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge)
     }
 }
 
-void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, uint8_t color_1, uint8_t color_2)
+void plotTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, uint8_t color_1, uint8_t color_2)
 {
     float color = color_1;
     int color_diff = color_2 - color_1;
@@ -988,8 +1441,8 @@ void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge,
     else if (x_diff > y_diff)
     {
         x_diff = fabs(x_diff);
-        color_ratio = color_diff / x_diff;
-        slope = y_diff / x_diff;
+        color_ratio = color_diff / x_diff; //Potential divide by zero
+        slope = y_diff / x_diff;//Potential divide by zero
             
         for (offset_x = 0; offset_x < x_diff; offset_x++)
         {
@@ -1007,7 +1460,7 @@ void drawTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge,
     }
 }
 
-void drawTriangleLineTexture(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, Vec2 tex_start, Vec2 tex_end)
+void plotTriangleLineTexture(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, Vec2 tex_start, Vec2 tex_end)
 {
     Vec2 uv;
     
@@ -1016,6 +1469,7 @@ void drawTriangleLineTexture(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, Vec2
     
     float x_diff = (p2.x - p1.x);
     float y_diff = (p2.y - p1.y);
+	
     float u_diff = (tex_end.x - tex_start.x);
     float v_diff = (tex_end.y - tex_start.y);
     
@@ -1025,52 +1479,70 @@ void drawTriangleLineTexture(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, Vec2
     float slope = 0.0;
     
     int y_sign = SIGN(y_diff);
+	int x_sign = SIGN(x_diff);
+	
     int x, y;
+	
+	uint8_t test_color;
     
-    uv.x = tex_start.x;
-    uv.y = tex_start.y;
-    
+	uv.x = tex_start.x;
+	uv.y = tex_start.y;
+    y_diff = fabs(y_diff)+1;
+	x_diff = fabs(x_diff)+1;
+	
     if (y_diff > x_diff)
     {
-        y_diff = fabs(y_diff);
-        slope = x_diff / y_diff;
-        
-        u_ratio = u_diff / y_diff;
-        v_ratio = v_diff / y_diff;
-            
+	    slope = (x_diff / y_diff) * x_sign;
+	    u_ratio = u_diff / y_diff;
+	    v_ratio = v_diff / y_diff;
+
         for (offset_y = 0; offset_y < y_diff; offset_y++)
         {
             offset_x = offset_y * slope;
             x = (int)(center.x + p1.x + offset_x);
-            y = (int)(center.y + p1.y + offset_y) * y_sign;
+            y = (int)(center.y + p1.y + (offset_y * y_sign));
             edge->offset[y] = x;
             edge->texture[y].x = uv.x;
             edge->texture[y].y = uv.y;
-            uv.x += u_ratio;
+			uv.x += u_ratio;
             uv.y += v_ratio;
         }
     }
     
     else if (x_diff > y_diff)
-    {
-        x_diff = fabs(x_diff);
-        slope = y_diff / x_diff;
-        
-        u_ratio = u_diff / x_diff;
-        v_ratio = v_diff / x_diff;
+    {  
+        slope = (y_diff / x_diff) * y_sign;
+	    u_ratio = u_diff / x_diff;
+	    v_ratio = v_diff / x_diff;
             
         for (offset_x = 0; offset_x < x_diff; offset_x++)
         {
             offset_y = offset_x * slope;
-            x = (int)(center.x + p1.x + offset_x);
-            y = (int)(center.y + p1.y + offset_y) * y_sign;
+            x = (int)(center.x + p1.x + (offset_x * x_sign));
+            y = (int)(center.y + p1.y + offset_y);
             edge->offset[y] = x;
             edge->texture[y].x = uv.x;
             edge->texture[y].y = uv.y;
-            uv.x += u_ratio;
+			uv.x += u_ratio;
             uv.y += v_ratio;
         }
     }
+	
+	// for debugging purposes
+	if (KEY_IS_PRESSED(KEY_W))
+	{
+	    if (edge == &LeftEdge)
+	        test_color = 32;
+	    
+	    else if (edge == & RightEdge)
+	        test_color = 40;
+			
+		p1.x += center.x;
+		p1.y += center.y;
+		p2.x += center.x;
+		p2.y += center.y;
+		draw_line(p1, p2, test_color);
+	}
 }
 
 void fillSpans(int top, int bottom, uint8_t color)
@@ -1125,6 +1597,29 @@ void fillSpansTextured(int top, int bottom, uint8_t* sprite)
     }
 }
 
+void fillSpansMeshTextured(int top, int bottom, Texture* texture)
+{
+    int line;
+    Vec2 p0, p1;
+    Vec2 tex_start;
+    Vec2 tex_end;
+
+    for (line = top; line < bottom; line++)
+    {
+        p0.x = LeftEdge.offset[line];
+        p1.x = RightEdge.offset[line];
+        
+        tex_start.x = LeftEdge.texture[line].x;
+        tex_start.y = LeftEdge.texture[line].y;
+        tex_end.x = RightEdge.texture[line].x;
+        tex_end.y = RightEdge.texture[line].y;
+		
+		//printf("Line %d OK!\n", line);
+        
+        drawLineHorzMeshTextured(p0.x, p1.x, line, tex_start, tex_end, texture);
+    }
+}
+
 void sortPair(Vec2* v0, Vec2* v1)
 {
     Vec2 temp;
@@ -1140,16 +1635,16 @@ void sortPair(Vec2* v0, Vec2* v1)
 void sortPairWithColor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
 {
     Vec2 temp;
-    uint8_t color_temp;
+    uint8_t Coloremp;
     
     if (v0->y > v1->y)
     {
         temp = *v0;
-        color_temp = *color1;
+        Coloremp = *color1;
         *v0 = *v1;
         *color1 = *color2;
         *v1 = temp;
-        *color2 = color_temp;
+        *color2 = Coloremp;
     }
 }
 
@@ -1193,15 +1688,15 @@ void drawFilledTriangle(Polygon* triangle)
     
     if (cross_product > 0)
     {
-        drawTriangleLine(A, B, center, &RightEdge);
-        drawTriangleLine(B, C, center, &RightEdge);
-        drawTriangleLine(A, C, center, &LeftEdge);
+        plotTriangleLine(A, B, center, &RightEdge);
+        plotTriangleLine(B, C, center, &RightEdge);
+        plotTriangleLine(A, C, center, &LeftEdge);
     }
     else
     {
-        drawTriangleLine(A, B, center, &LeftEdge);
-        drawTriangleLine(B, C, center, &LeftEdge);
-        drawTriangleLine(A, C, center, &RightEdge);
+        plotTriangleLine(A, B, center, &LeftEdge);
+        plotTriangleLine(B, C, center, &LeftEdge);
+        plotTriangleLine(A, C, center, &RightEdge);
     }
     if (KEY_IS_PRESSED (KEY_E))
         fillSpans(center.y + A.y, center.y + C.y, 85);
@@ -1211,7 +1706,7 @@ void drawShadedTriangle(Polygon* triangle)
 {    
     Vec2 A, B, C;
     Vec2 AB, AC;
-    Vec2_int center = {159, 99};
+    Vec2_int center = {99, 99};
     float cross_product;
     uint8_t A_color, B_color, C_color;
     
@@ -1254,33 +1749,34 @@ void drawShadedTriangle(Polygon* triangle)
     
     if (cross_product > 0)
     {
-        drawTriangleLineColorBlended(A, B, center, &RightEdge, A_color, B_color);
-        drawTriangleLineColorBlended(B, C, center, &RightEdge, B_color, C_color);
-        drawTriangleLineColorBlended(A, C, center, &LeftEdge, A_color, C_color);
+        plotTriangleLineColorBlendedInt(A, B, center, &RightEdge, A_color, B_color);
+        plotTriangleLineColorBlendedInt(B, C, center, &RightEdge, B_color, C_color);
+        plotTriangleLineColorBlendedInt(A, C, center, &LeftEdge, A_color, C_color);
     }
     else
     {
-        drawTriangleLineColorBlended(A, B, center, &LeftEdge, A_color, B_color);
-        drawTriangleLineColorBlended(B, C, center, &LeftEdge, B_color, C_color);
-        drawTriangleLineColorBlended(A, C, center, &RightEdge, A_color, C_color);
+        plotTriangleLineColorBlendedInt(A, B, center, &LeftEdge, A_color, B_color);
+        plotTriangleLineColorBlendedInt(B, C, center, &LeftEdge, B_color, C_color);
+        plotTriangleLineColorBlendedInt(A, C, center, &RightEdge, A_color, C_color);
     }
     //if (KEY_IS_PRESSED (KEY_W))
-    fillSpansColorBlended(center.y + A.y, center.y + C.y);
+    fillSpansColorBlendedInt(center.y + A.y, center.y + C.y);
 }
 
 void drawTexturedTriangle(Polygon* triangle)
 {    
-    Vec2 A, B, C;
+    Vec2 A, B, C, point_a, point_b, point_c;
     Vec2 AB, AC;
-    Vec2_int center = {159, 99};
-    Vec2 point_a = {50.0, 10.0};
-    Vec2 point_b = {20.0, 70.0};
-    Vec2 point_c = {80.0, 70.0};
+    Vec2_int center = triangle->center;
     float cross_product;
     
     A = triangle->transformedV[0];
     B = triangle->transformedV[1];
     C = triangle->transformedV[2];
+    
+    point_a = triangle->UVCoords[0];
+    point_b = triangle->UVCoords[1];
+    point_c = triangle->UVCoords[2];
     
     sortPairWithPoint(&A, &B, &point_a, &point_b);
     sortPairWithPoint(&A, &C, &point_a, &point_c);
@@ -1295,17 +1791,69 @@ void drawTexturedTriangle(Polygon* triangle)
     
     if (cross_product > 0)
     {
-        drawTriangleLineTexture(A, B, center, &RightEdge, point_a, point_b);
-        drawTriangleLineTexture(B, C, center, &RightEdge, point_b, point_c);
-        drawTriangleLineTexture(A, C, center, &LeftEdge, point_a, point_c);
+        plotTriangleLineTexture(A, B, center, &RightEdge, point_a, point_b);
+        plotTriangleLineTexture(B, C, center, &RightEdge, point_b, point_c);
+        plotTriangleLineTexture(A, C, center, &LeftEdge, point_a, point_c);
     }
     else
     {
-        drawTriangleLineTexture(A, B, center, &LeftEdge, point_a, point_b);
-        drawTriangleLineTexture(B, C, center, &LeftEdge, point_b, point_c);
-        drawTriangleLineTexture(A, C, center, &RightEdge, point_a, point_c);
+        plotTriangleLineTexture(A, B, center, &LeftEdge, point_a, point_b);
+        plotTriangleLineTexture(B, C, center, &LeftEdge, point_b, point_c);
+        plotTriangleLineTexture(A, C, center, &RightEdge, point_a, point_c);
     }
     fillSpansTextured(center.y + A.y, center.y + C.y, tile);
+}
+
+void draw2DMeshTriangle(Mesh2D* mesh, int triangle_ID)
+{    
+    Vec2 A, B, C, point_a, point_b, point_c;
+    Vec2 AB, AC;
+    Vec2_int center = mesh->center;
+    float cross_product;
+    
+    A = mesh->transformedP[mesh->triangleVertices[0 + triangle_ID * 3].pointID];
+    B = mesh->transformedP[mesh->triangleVertices[1 + triangle_ID * 3].pointID];
+    C = mesh->transformedP[mesh->triangleVertices[2 + triangle_ID * 3].pointID];
+    
+    point_a = mesh->triangleVertices[0 + triangle_ID * 3].UV;
+    point_b = mesh->triangleVertices[1 + triangle_ID * 3].UV;
+    point_c = mesh->triangleVertices[2 + triangle_ID * 3].UV;
+    
+    sortPairWithPoint(&A, &B, &point_a, &point_b);
+    sortPairWithPoint(&A, &C, &point_a, &point_c);
+    sortPairWithPoint(&B, &C, &point_b, &point_c);
+    
+    AB.x = B.x - A.x;
+    AB.y = B.y - A.y;
+    AC.x = C.x - A.x;
+    AC.y = C.y - A.y;
+    
+    cross_product = (AB.x * AC.y) - (AB.y * AC.x);
+    
+    if (cross_product > 0)
+    {
+        plotTriangleLineTexture(A, B, center, &RightEdge, point_a, point_b);
+        plotTriangleLineTexture(B, C, center, &RightEdge, point_b, point_c);
+        plotTriangleLineTexture(A, C, center, &LeftEdge, point_a, point_c);
+    }
+    else
+    {
+        plotTriangleLineTexture(A, B, center, &LeftEdge, point_a, point_b);
+        plotTriangleLineTexture(B, C, center, &LeftEdge, point_b, point_c);
+        plotTriangleLineTexture(A, C, center, &RightEdge, point_a, point_c);
+    }
+    fillSpansMeshTextured(center.y + A.y, center.y + C.y, mesh->texture);
+}
+
+void draw2DMesh(Mesh2D* mesh)
+{   
+    int i = 0;
+
+    while (i < mesh->numTriangles)
+    {
+        draw2DMeshTriangle(mesh, i);
+        i++;
+    }
 }
 
 void draw_polygon(Polygon* poly, int center_x, int center_y)
@@ -1314,7 +1862,7 @@ void draw_polygon(Polygon* poly, int center_x, int center_y)
     Vec2 start_loc;
     Vec2 end_loc;
     
-    while (i < poly->numVertices - 1)
+    while (i < poly->numPoints - 1)
     {
         start_loc.x = center_x + poly->transformedV[i].x;
         start_loc.y = center_y + poly->transformedV[i].y;
@@ -1342,7 +1890,7 @@ void draw_polygon_int(Polygon* poly, int center_x, int center_y)
     Vec2_int start_loc;
     Vec2_int end_loc;
     
-    while (i < poly->numVertices - 1)
+    while (i < poly->numPoints - 1)
     {
         start_loc.x = center_x + (int)poly->transformedV[i].x;
         start_loc.y = center_y + (int)poly->transformedV[i].y;
@@ -1401,8 +1949,11 @@ void draw_stuff()
     //draw_polygons();
     //test_draw();
     //drawFilledTriangle(&poly_array[5]);
-    //drawShadedTriangle(&poly_array[5]);
-    drawTexturedTriangle(&poly_array[6]);
+    drawShadedTriangle(&poly_array[5]);
+    //drawTexturedTriangle(&poly_array[6]);
+    //drawTexturedTriangle(&poly_array[7]);
+    //draw_sprite(144, 68, &CarTex);
+    draw2DMesh(&CarMesh);
 }
 
 void render()
@@ -1420,6 +1971,29 @@ void quit()
     set_mode(TEXT_MODE);
 }
 
+void makeQuadrilateral()
+{
+    Vec2 point_a = {24.5, 0.0};
+    Vec2 point_b = {0.0, 99.0};
+    Vec2 point_c = {49.0, 99.0};
+    Vec2_int center = {100, 68};
+    
+    poly_array[6] = makeTexturedTriangle(0.0, 3, 35.0, 1.0, point_a, point_b, point_c, center);
+    point_a.x = 74.5;
+    point_a.y = 99.0;
+    point_b.x = 50.0;
+    point_b.y = 0.0;
+    point_c.x = 99.0;
+    point_c.y = 0.0;
+    center.x = 130;
+    center.y = 85;
+    poly_array[7] = makeTexturedTriangle(0.0, 3, 35.0, 1.0, point_a, point_b, point_c, center);
+    poly_array[6].angle = 5.76;
+    poly_array[7].angle = 2.618;
+    updatePoly(&poly_array[6]);
+    updatePoly(&poly_array[7]);
+}
+
 void main()
 {   
     poly_array[0] = makeSquare(0.0, 10.0, 1.0, 44);
@@ -1428,11 +2002,19 @@ void main()
     poly_array[3] = makePolygon(0.0, 5, 25.0, 1.0, 47);
     poly_array[4] = makePolygon(0.0, 3, 15.0, 1.0, 47);
     poly_array[5] = makeShadedTriangle(0.0, 3, 15.0, 1.0, 16, 23, 31);
-    poly_array[6] = makePolygon(0.0, 3, 15.0, 1.0, 47);
-
-    load_font();
-    load_gfx("WALL.7UP", tile, 10000);
+    //makeQuadrilateral();
+	
     set_mode(VGA_256_COLOR_MODE);
+    loadPalette("Pal.bmp", &NewPalette);
+    setPalette_VGA(&NewPalette);
+    
+    //load_font();
+    load_gfx("WALL.7UP", tile, 10000);
+    load_texture("CAR.7UP", &CarTex, 32, 64, TRUE);
+
+    MakeCarMesh(&CarMesh);
+    mesh_array[0] = CarMesh;
+    
     init_keyboard();
     
     while (running == 1)
@@ -1440,7 +2022,7 @@ void main()
         process_input();
         draw_stuff();
         render();
-        delay(50);
+        //delay(10);
     }
     quit();
 }
