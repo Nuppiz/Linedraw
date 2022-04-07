@@ -285,7 +285,7 @@ void drawLineHorzTextured(int start_x, int end_x, int start_y, Vec2 sprite_start
 	}
 }
 
-/*void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_start, Vec2 tex_end, Texture* texture)
+void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_start, Vec2 tex_end, Texture* texture)
 {
     Vec2 uv;
     int offset_x;
@@ -340,4 +340,4 @@ void drawLineHorzTextured(int start_x, int end_x, int start_y, Vec2 sprite_start
 	        }
 	    }
 	}
-}*/
+}
