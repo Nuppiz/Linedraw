@@ -18,6 +18,8 @@ extern Palette NewPalette;
 extern Mesh2D CarMesh;
 extern Texture CarTex;
 
+extern uint8_t far screen_buf [];
+
 Line line_array[5] = {
     {{40.0,  50.0}, {20.0, 40.0}, 41},
     {{100.0, 20.0}, {180.0, 30.0}, 55},

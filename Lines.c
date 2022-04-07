@@ -3,7 +3,9 @@
 #include "Structs.h"
 #include "Video.h"
 
-extern uint8_t* far screen_buf;
+/* Line drawing functions */
+
+extern uint8_t far screen_buf [];
 
 void drawLineHor(int start_x, int start_y, int x_diff, uint8_t color)
 {

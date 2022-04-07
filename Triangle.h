@@ -1,6 +1,7 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-/* Triangle plotting and drawing functions */
+void drawShadedTriangle();
+void draw2DMeshTriangle();
 
 #endif

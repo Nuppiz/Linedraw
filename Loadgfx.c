@@ -1,7 +1,7 @@
 #include "Common.h"
 #include "Structs.h"
 
-extern uint8_t alphabet;
+/* Graphics loading functions */
 
 void loadGfx(char* filename, uint8_t* destination, uint16_t data_size)
 {

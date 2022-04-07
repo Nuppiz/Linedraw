@@ -2,8 +2,10 @@
 #include "Defines.h"
 #include "Structs.h"
 
-extern Polygon* poly_array;
-extern Mesh2D* mesh_array;
+/* Keyboard driver and control inputs */
+
+extern Polygon poly_array [];
+extern Mesh2D mesh_array [];
 extern int running;
 
 struct Input

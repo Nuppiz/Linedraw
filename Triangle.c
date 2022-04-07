@@ -2,11 +2,13 @@
 #include "Defines.h"
 #include "Structs.h"
 
+/* Triangle plotting and drawing functions */
+
 Span LeftEdge;
 Span RightEdge;
 
-extern uint8_t* far screen_buf;
-extern uint8_t* tile;
+extern uint8_t far screen_buf [];
+extern uint8_t tile [];
 extern uint8_t* g_Keyboard;
 
 void plotTriangleLineColorBlendedInt(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, uint8_t start_color, uint8_t end_color)

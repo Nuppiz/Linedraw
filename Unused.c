@@ -1,8 +1,8 @@
-/* Garbage functions not currently used anywhere, saved for posterity */
-
 #include "Common.h"
 #include "Defines.h"
 #include "Structs.h"
+
+/* Garbage functions not currently used anywhere, saved for posterity */
 
 Vec2 change_vec_scale(Vec2 vector, float scale)
 {

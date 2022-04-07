@@ -3,10 +3,12 @@
 #include "Structs.h"
 #include "Video.h"
 
-extern uint8_t* far screen_buf;
-extern Polygon* poly_array;
-extern Line* line_array;
-extern Line_int* intline_array;
+/* Graphics drawing functions */
+
+extern uint8_t far screen_buf [];
+extern Polygon poly_array [];
+extern Line line_array [];
+extern Line_int intline_array [];
 extern Mesh2D CarMesh;
 
 void drawSprite(int x, int y, Texture* texture)

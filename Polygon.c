@@ -2,7 +2,7 @@
 #include "Defines.h"
 #include "Structs.h"
 
-extern Polygon* poly_array;
+extern Polygon poly_array [];
 
 void updatePoly(Polygon* poly)
 {

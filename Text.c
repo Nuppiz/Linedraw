@@ -1,7 +1,7 @@
 #include "Common.h"
 #include "Defines.h"
 
-extern uint8_t* far screen_buf;
+extern uint8_t far screen_buf [];
 uint8_t alphabet [4240]; // Array to hold the typeface graphics
 
 void loadFont()
