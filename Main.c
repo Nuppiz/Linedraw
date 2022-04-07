@@ -9,6 +9,7 @@
 #include "Polygon.h"
 #include "Structs.h"
 #include "Text.h"
+#include "Triangle.h"
 
 int running = 1;
 uint8_t tile [10000];

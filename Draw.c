@@ -10,6 +10,7 @@ extern Polygon poly_array [];
 extern Line line_array [];
 extern Line_int intline_array [];
 extern Mesh2D CarMesh;
+extern Texture CarTex;
 
 void drawSprite(int x, int y, Texture* texture)
 {
@@ -145,13 +146,13 @@ void drawPolygons()
 
 void drawStuff()
 {
-    //draw_lines();
-    //draw_polygons();
+    //drawLines();
+    //drawPolygons();
     //test_draw();
     //drawFilledTriangle(&poly_array[5]);
     //drawShadedTriangle(&poly_array[5]);
     //drawTexturedTriangle(&poly_array[6]);
     //drawTexturedTriangle(&poly_array[7]);
-    //draw_sprite(144, 68, &CarTex);
+    //drawSprite(144, 68, &CarTex);
     draw2DMesh(&CarMesh);
 }

@@ -6,6 +6,7 @@
 /* Line drawing functions */
 
 extern uint8_t far screen_buf [];
+extern Texture CarTex;
 
 void drawLineHor(int start_x, int start_y, int x_diff, uint8_t color)
 {
@@ -284,7 +285,7 @@ void drawLineHorzTextured(int start_x, int end_x, int start_y, Vec2 sprite_start
 	}
 }
 
-void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_start, Vec2 tex_end, Texture* texture)
+/*void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_start, Vec2 tex_end, Texture* texture)
 {
     Vec2 uv;
     int offset_x;
@@ -339,4 +340,4 @@ void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_star
 	        }
 	    }
 	}
-}
+}*/

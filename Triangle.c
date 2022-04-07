@@ -336,6 +336,63 @@ void fillSpansTextured(int top, int bottom, uint8_t* sprite)
     }
 }
 
+void drawLineHorzMeshTextured(int start_x, int end_x, int start_y, Vec2 tex_start, Vec2 tex_end, Texture* texture)
+{
+    Vec2 uv;
+    int offset_x;
+    float u_ratio;
+    float v_ratio;
+    float x_diff = end_x - start_x;
+    float u_diff = tex_end.x - tex_start.x;
+    float v_diff = tex_end.y - tex_start.y;
+	int tex_x_mask = texture->width-1; // Caution: This assumes texture dimensions
+	int tex_y_mask = texture->height-1; // are powers of 2! Shit breaks otherwise
+    int x, y, pixel;
+    uint8_t color;
+    uv.x = tex_start.x;
+    uv.y = tex_start.y;
+	start_x++;
+    
+    x_diff = fabs(x_diff);
+    
+	if (x_diff != 0)
+	{
+	    u_ratio = u_diff / x_diff;
+	    v_ratio = v_diff / x_diff;
+	
+	    
+	    if (texture->transparent == TRUE)
+	    {
+	        for (offset_x = 0; offset_x < x_diff; offset_x++)
+	        {
+	            //pixel = (((int)uv.y) % texture->height) * texture->width
+				//		+ (((int)uv.x) % texture->width);
+	            pixel = (((int)uv.y) & tex_y_mask) * texture->width
+						+ (((int)uv.x) & tex_x_mask);
+	            color = texture->pixels[pixel];
+	            if (color != TRANSPARENT_COLOR)
+	                SET_PIXEL(start_x + offset_x, start_y, color);
+	            uv.x += u_ratio;
+	            uv.y += v_ratio;
+	        }
+	    }
+	    else
+	    {
+	        for (offset_x = 0; offset_x < x_diff; offset_x++)
+	        {
+	            //pixel = (((int)uv.y) % texture->height) * texture->width
+				//		+ (((int)uv.x) % texture->width);
+	            pixel = (((int)uv.y) & tex_y_mask) * texture->width
+						+ (((int)uv.x) & tex_x_mask);
+	            color = texture->pixels[pixel];
+	            SET_PIXEL(start_x + offset_x, start_y, color);
+	            uv.x += u_ratio;
+	            uv.y += v_ratio;
+	        }
+	    }
+	}
+}
+
 void fillSpansMeshTextured(int top, int bottom, Texture* texture)
 {
     int line;

@@ -2,5 +2,6 @@
 #define DRAW_H
 
 void drawSprite();
+void drawStuff();
 
 #endif

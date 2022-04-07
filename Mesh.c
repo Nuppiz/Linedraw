@@ -2,6 +2,8 @@
 #include "Defines.h"
 #include "Structs.h"
 
+/* Mesh-related functions */
+
 Mesh2D CarMesh;
 Texture CarTex;
 
