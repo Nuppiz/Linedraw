@@ -150,9 +150,9 @@ void drawStuff()
     //drawPolygons();
     //test_draw();
     //drawFilledTriangle(&poly_array[5]);
-    //drawShadedTriangle(&poly_array[5]);
+    drawShadedTriangle(&poly_array[5]);
     //drawTexturedTriangle(&poly_array[6]);
     //drawTexturedTriangle(&poly_array[7]);
     //drawSprite(144, 68, &CarTex);
-    draw2DMesh(&CarMesh);
+    //draw2DMesh(&CarMesh);
 }

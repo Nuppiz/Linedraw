@@ -68,6 +68,7 @@ void main()
     
     loadGfx("WALL.7UP", tile, 10000);
     loadTexture("CAR.7UP", &CarTex, 32, 64, TRUE);
+    loadFont();
 
     createPolygons();
 
@@ -81,7 +82,7 @@ void main()
         processInput();
         drawStuff();
         render();
-        //delay(10);
+        delay(10);
     }
     quit();
 }

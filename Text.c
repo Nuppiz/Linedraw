@@ -1,6 +1,8 @@
 #include "Common.h"
 #include "Defines.h"
 
+/* Text drawing functions */
+
 extern uint8_t far screen_buf [];
 uint8_t alphabet [4240]; // Array to hold the typeface graphics
 

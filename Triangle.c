@@ -15,10 +15,10 @@ void plotTriangleLineColorBlendedInt(Vec2 p1, Vec2 p2, Vec2_int center, Span* ed
 {
 	int offset;
 	int counter;
-    int x = (int)(p1.x + 0.5) + center.x;
-	int y = (int)(p1.y + 0.5) + center.y;
-    int x_diff = (int)(p2.x - p1.x + 0.5);
-    int y_diff = (int)(p2.y - p1.y + 0.5);
+    int x = p1.x + center.x;
+	int y = p1.y + center.y;
+    int x_diff = p2.x - p1.x;
+    int y_diff = p2.y - p1.y;
     int x_sign = SIGN(x_diff);
 	int y_sign = SIGN(y_diff);
 	
@@ -26,61 +26,91 @@ void plotTriangleLineColorBlendedInt(Vec2 p1, Vec2 p2, Vec2_int center, Span* ed
     int color_diff = end_color - start_color;
 	int color_sign = SIGN(color_diff);
 	int color_counter;
+    char* edge_name;
+
+    uint8_t test_color;
 	
 	x_diff = abs(x_diff);
 	y_diff = abs(y_diff);
 	color_diff = abs(color_diff);
+
+    if (edge == &LeftEdge)
+    {
+        test_color = 200;
+        edge_name = "Left";
+    }
+    
+    else if (edge == &RightEdge)
+    {
+        test_color = 112;
+        edge_name = "Right";
+    }
 	
     if (y_diff > x_diff)
     {
-		color_counter = y_diff/2;
-		// beginning at y_diff/2 instead of 0 fixes a minor inaccuracy
-        for (offset = 0; offset < y_diff; offset++)
+        color_counter = y_diff/2;
+        counter = y_diff/2;
+        // beginning at y_diff/2 instead of 0 fixes a minor inaccuracy
+        for (offset = 0; offset <= y_diff; offset++)
         {
             edge->offset[y] = x;
             edge->color[y] = (uint8_t)color;
-			// move along the y coordinate
-			y += y_sign;
-			// check whether to move on the y coordinate
-			counter += x_diff;
-			while (counter > y_diff)
-			{
-				counter -= y_diff;
-				x += x_sign;
-			}
-			// check whether to step the color value forwards
-			color_counter += color_diff;
-			while (color_counter > y_diff)
-			{
-				color_counter -= y_diff;
-				color += color_sign;
-			}
+            // move along the y coordinate
+            y += y_sign;
+            // check whether to move on the y coordinate
+            counter += x_diff;
+            while (counter > y_diff)
+            {
+                counter -= y_diff;
+                x += x_sign;
+            }
+            // check whether to step the color value forwards
+            color_counter += color_diff;
+            while (color_counter > y_diff)
+            {
+                color_counter -= y_diff;
+                color += color_sign;
+            }
+            //printf("Writing: %s Y: %d X:%d\n", edge_name, y, x);
+            //delay(100);
+            if (KEY_IS_PRESSED (KEY_Q))
+                SET_PIXEL(edge->offset[y], y, test_color);
+            else if (KEY_IS_PRESSED (KEY_R))
+                SET_PIXEL(edge->offset[y], y, edge->color[y]);
         }
     }
+
     else if (x_diff > y_diff)
     {
-		color_counter = x_diff/2;
-		// beginning at x_diff/2 instead of 0 fixes a minor inaccuracy	
-        for (offset = 0; offset < x_diff; offset++)
+        color_counter = x_diff/2;
+        counter = x_diff/2;
+        // beginning at y_diff/2 instead of 0 fixes a minor inaccuracy
+        for (offset = 0; offset <= x_diff; offset++)
         {
             edge->offset[y] = x;
             edge->color[y] = (uint8_t)color;
-			// move along the x coordinate
-			x += x_sign;
-			// check whether to move on the y coordinate
-			counter += y_diff;
-			while (counter > x_diff)
-			{
-				counter -= x_diff;
-				y += y_sign;
-			}
-			// check whether to step the color value forwards
-			color_counter += color_diff;
-			while (color_counter > x_diff)
-			{
-				color_counter -= x_diff;
-				color += color_sign;
-			}
+            // move along the x coordinate
+            x += x_sign;
+            // check whether to move on the x coordinate
+            counter += y_diff;
+            while (counter > x_diff)
+            {
+                counter -= x_diff;
+                y += y_sign;
+            }
+            // check whether to step the color value forwards
+            color_counter += color_diff;
+            while (color_counter > x_diff)
+            {
+                color_counter -= x_diff;
+                color += color_sign;
+            }
+            //printf("Writing: %s Y: %d X:%d\n", edge_name, y, x);
+            //delay(100);
+            if (KEY_IS_PRESSED (KEY_Q))
+                SET_PIXEL(edge->offset[y], y, test_color);
+            else if (KEY_IS_PRESSED (KEY_R))
+                SET_PIXEL(edge->offset[y], y, edge->color[y]);
         }
     }
 }
@@ -374,16 +404,16 @@ void sortPair(Vec2* v0, Vec2* v1)
 void sortPairWithColor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
 {
     Vec2 temp;
-    uint8_t Coloremp;
+    uint8_t colortemp;
     
     if (v0->y > v1->y)
     {
         temp = *v0;
-        Coloremp = *color1;
+        colortemp = *color1;
         *v0 = *v1;
         *color1 = *color2;
         *v1 = temp;
-        *color2 = Coloremp;
+        *color2 = colortemp;
     }
 }
 
@@ -445,13 +475,27 @@ void drawShadedTriangle(Polygon* triangle)
 {    
     Vec2 A, B, C;
     Vec2 AB, AC;
-    Vec2_int center = {99, 99};
+    Vec2_int center = {159, 99};
     float cross_product;
     uint8_t A_color, B_color, C_color;
+    char A_str [20];
+    char B_str [20];
+    char C_str [20];
+    char YC_str [20];
+    char YA_str [40];
+    char YT_str [20];
+    float y_total;
     
     A = triangle->transformedV[0];
     B = triangle->transformedV[1];
     C = triangle->transformedV[2];
+
+    sprintf(A_str, "A-POINT: %f", A.y);
+    sprintf(B_str, "B-POINT: %f", B.y);
+    sprintf(C_str, "C-POINT: %f", C.y);
+    renderText(0, 0, A_str, 4);
+    renderText(0, 10, B_str, 4);
+    renderText(0, 20, C_str, 4);
     
     if (KEY_IS_PRESSED (KEY_1))
         triangle->vertexColors[0]++;
@@ -498,8 +542,18 @@ void drawShadedTriangle(Polygon* triangle)
         plotTriangleLineColorBlendedInt(B, C, center, &LeftEdge, B_color, C_color);
         plotTriangleLineColorBlendedInt(A, C, center, &RightEdge, A_color, C_color);
     }
-    //if (KEY_IS_PRESSED (KEY_W))
-    fillSpansColorBlendedInt(center.y + A.y, center.y + C.y);
+    
+    if (KEY_IS_PRESSED (KEY_W))
+    {
+        fillSpansColorBlendedInt(center.y + A.y, center.y + C.y);
+        y_total = center.y + A.y;
+        sprintf(YC_str, "CENTER-Y: %d", center.y);
+        sprintf(YA_str, "RECA-POINT: %f", A.y);
+        sprintf(YT_str, "START-Y: %f", y_total);
+        renderText(0, 40, YC_str, 4);
+        renderText(0, 50, YA_str, 4);
+        renderText(0, 60, YT_str, 4);
+    }
 }
 
 void drawTexturedTriangle(Polygon* triangle)

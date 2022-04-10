@@ -139,33 +139,29 @@ void controlIngame()
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
         modObject.angle -= TURN_RATE;
-        //poly_array[7].angle -= RAD_15;
-        updateMesh(&modObject);
-        //updatePoly(&poly_array[7]);
+        updatePoly(&modObject);
+        //updateMesh(&modObject);
     }
     
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
         modObject.angle += TURN_RATE;
-        //poly_array[7].angle += RAD_15;
-        updateMesh(&modObject);
-        //updatePoly(&poly_array[7]);
+        updatePoly(&modObject);
+        //updateMesh(&modObject);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))
     {
         modObject.scale *= 1.05;
-        poly_array[5].scale *= 1.05;
-        updateMesh(&modObject);
-        //updatePoly(&poly_array[7]);
+        updatePoly(&modObject);
+        //updateMesh(&modObject);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
     {
         modObject.scale /= 1.05;
-        poly_array[5].scale /= 1.05;
-        updateMesh(&modObject);
-        //updatePoly(&poly_array[7]);
+        updatePoly(&modObject);
+        //updateMesh(&modObject);
     }
 }
 

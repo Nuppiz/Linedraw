@@ -73,9 +73,9 @@
 #define RGB(color)                (color.r, color.g, color.b)
 
 /* Misc / general defines */
-#define TRUE 1
-#define FALSE 0
+#define TRUE                1
+#define FALSE               0
 
-#define modObject           mesh_array[0]
+#define modObject           poly_array[5]//mesh_array[0]
 
 #endif
