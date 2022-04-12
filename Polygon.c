@@ -145,10 +145,10 @@ Polygon makeTexturedTriangle(float angle, int numPoints, float radius, float sca
 
 void createPolygons()
 {
-    poly_array[0] = makeSquare(0.0, 10.0, 1.0, 44);
-    poly_array[1] = makePolygon(0.0, 3, 15.0, 1.0, 47);
-    poly_array[2] = makePolygon(0.0, 5, 25.0, 1.0, 47);
-    poly_array[3] = makePolygon(0.0, 5, 25.0, 1.0, 47);
-    poly_array[4] = makePolygon(0.0, 3, 15.0, 1.0, 47);
+    poly_array[0] = makeSquare(0.0, 10.0, 1.0, 112);
+    poly_array[1] = makePolygon(0.0, 3, 15.0, 1.0, 112);
+    poly_array[2] = makePolygon(0.0, 5, 25.0, 1.0, 112);
+    poly_array[3] = makePolygon(0.0, 8, 25.0, 1.0, 112);
+    poly_array[4] = makePolygon(0.0, 3, 15.0, 1.0, 112);
     poly_array[5] = makeShadedTriangle(0.0, 3, 15.0, 1.0, 16, 23, 31);
 }

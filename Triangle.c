@@ -490,7 +490,7 @@ void drawShadedTriangle(Polygon* triangle)
     B = triangle->transformedV[1];
     C = triangle->transformedV[2];
 
-    sprintf(A_str, "A-POINT: %f", A.y);
+    /*sprintf(A_str, "A-POINT: %f", A.y);
     sprintf(B_str, "B-POINT: %f", B.y);
     sprintf(C_str, "C-POINT: %f", C.y);
     renderText(0, 0, A_str, 4);
@@ -513,7 +513,7 @@ void drawShadedTriangle(Polygon* triangle)
         triangle->vertexColors[1]--;
     
     else if (KEY_IS_PRESSED (KEY_6))
-        triangle->vertexColors[2]--;
+        triangle->vertexColors[2]--;*/
     
     A_color = triangle->vertexColors[0];
     B_color = triangle->vertexColors[1];
@@ -542,10 +542,11 @@ void drawShadedTriangle(Polygon* triangle)
         plotTriangleLineColorBlendedInt(B, C, center, &LeftEdge, B_color, C_color);
         plotTriangleLineColorBlendedInt(A, C, center, &RightEdge, A_color, C_color);
     }
+
+    fillSpansColorBlendedInt(center.y + A.y, center.y + C.y);
     
     if (KEY_IS_PRESSED (KEY_W))
     {
-        fillSpansColorBlendedInt(center.y + A.y, center.y + C.y);
         y_total = center.y + A.y;
         sprintf(YC_str, "CENTER-Y: %d", center.y);
         sprintf(YA_str, "RECA-POINT: %f", A.y);

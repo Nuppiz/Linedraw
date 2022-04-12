@@ -11,6 +11,7 @@ extern Line line_array [];
 extern Line_int intline_array [];
 extern Mesh2D CarMesh;
 extern Texture CarTex;
+extern uint8_t* g_Keyboard;
 
 void drawSprite(int x, int y, Texture* texture)
 {
@@ -147,12 +148,15 @@ void drawPolygons()
 void drawStuff()
 {
     //drawLines();
-    //drawPolygons();
+    if (KEY_IS_PRESSED (KEY_1))
+        drawPolygons();
     //test_draw();
     //drawFilledTriangle(&poly_array[5]);
-    drawShadedTriangle(&poly_array[5]);
+    else if (KEY_IS_PRESSED (KEY_2))
+        drawShadedTriangle(&poly_array[5]);
     //drawTexturedTriangle(&poly_array[6]);
     //drawTexturedTriangle(&poly_array[7]);
     //drawSprite(144, 68, &CarTex);
-    //draw2DMesh(&CarMesh);
+    else if (KEY_IS_PRESSED (KEY_3))
+        draw2DMesh(&CarMesh);
 }
