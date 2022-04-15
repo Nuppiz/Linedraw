@@ -18,6 +18,7 @@
 #define TILE_WIDTH          8
 #define TILE_HEIGHT         8
 #define CHARACTER_SIZE      72
+#define COLOR_WHITE         4
 
 /* Keyboard and control defines */
 #define KB_ARRAY_LENGTH     256

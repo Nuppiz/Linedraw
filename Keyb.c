@@ -6,6 +6,7 @@
 
 extern Polygon poly_array [];
 extern Mesh2D mesh_array [];
+extern Object3D object_array [];
 extern int running;
 
 struct Input
@@ -140,32 +141,40 @@ void controlIngame()
     {
         modObject.angle -= TURN_RATE;
         mesh_array[0].angle -= TURN_RATE;
+        object_array[0].angle -= TURN_RATE;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
+        updateObject(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
         modObject.angle += TURN_RATE;
         mesh_array[0].angle += TURN_RATE;
+        object_array[0].angle += TURN_RATE;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
+        updateObject(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))
     {
         modObject.scale *= 1.05;
         mesh_array[0].scale *= 1.05;
+        object_array[0].scale *= 1.05;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
+        updateObject(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
     {
         modObject.scale /= 1.05;
         mesh_array[0].scale /= 1.05;
+        object_array[0].scale /= 1.05;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
+        updateObject(&object_array[0]);
     }
 }
 

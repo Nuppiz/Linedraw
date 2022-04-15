@@ -85,4 +85,17 @@ typedef struct
     Color colors[256];
 } Palette;
 
+typedef struct
+{
+    float angle;
+    float scale;
+    int numPoints;
+    Vec2* points;
+    Vec2* transformedP;
+    int numTriangles;
+    Vertex* triangleVertices;
+    Vec2_int center;
+} Object3D;
+
+
 #endif

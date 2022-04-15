@@ -18,6 +18,7 @@ uint8_t car [2048];
 extern Palette NewPalette;
 extern Mesh2D CarMesh;
 extern Texture CarTex;
+extern Object3D Cube;
 
 extern uint8_t far screen_buf [];
 
@@ -36,6 +37,7 @@ Line_int intline_array[2] = {
 
 Polygon poly_array[10];
 Mesh2D mesh_array[10];
+Object3D object_array[1];
 
 Vec2 change_vec_angle(Vec2 vector, float angle)
 {
@@ -73,7 +75,9 @@ void main()
     createPolygons();
 
     MakeCarMesh(&CarMesh);
+    MakeCube(&Cube);
     mesh_array[0] = CarMesh;
+    object_array[0] = Cube;
     
     initKeyboard();
     
