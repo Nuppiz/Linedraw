@@ -15,6 +15,11 @@ typedef struct
 
 typedef struct
 {
+    float x, y, z;
+} Vec3;
+
+typedef struct
+{
     Vec2 startpos;
     Vec2 endpos;
     uint8_t color;
@@ -87,11 +92,11 @@ typedef struct
 
 typedef struct
 {
-    float angle;
+    float x_angle, y_angle, z_angle;
     float scale;
     int numPoints;
-    Vec2* points;
-    Vec2* transformedP;
+    Vec3* points;
+    Vec3* transformedP;
     int numTriangles;
     Vertex* triangleVertices;
     Vec2_int center;

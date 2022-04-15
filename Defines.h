@@ -19,6 +19,7 @@
 #define TILE_HEIGHT         8
 #define CHARACTER_SIZE      72
 #define COLOR_WHITE         4
+#define COLOR_RED           176
 
 /* Keyboard and control defines */
 #define KB_ARRAY_LENGTH     256
@@ -44,6 +45,8 @@
 #define KEY_W               17
 #define KEY_E               18
 #define KEY_R               19
+#define KEY_U               22
+#define KEY_I               23
 #define KEY_1               2
 #define KEY_2               3
 #define KEY_3               4
@@ -78,5 +81,6 @@
 #define FALSE               0
 
 #define modObject           poly_array[5]//mesh_array[0]
+#define CUBE_SIZE           10
 
 #endif

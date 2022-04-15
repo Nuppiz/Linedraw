@@ -8,6 +8,8 @@ Mesh2D CarMesh;
 Texture CarTex;
 Object3D Cube;
 
+extern uint8_t far screen_buf [];
+
 void MakeCarMesh(Mesh2D* carmesh)
 {
     carmesh->angle = 0.0;
@@ -37,53 +39,63 @@ void MakeCarMesh(Mesh2D* carmesh)
     carmesh->triangleVertices[0].UV.x = 0;
     carmesh->triangleVertices[0].UV.y = 0;
     carmesh->triangleVertices[1].pointID = 1;
-    carmesh->triangleVertices[1].UV.x = 32;
+    carmesh->triangleVertices[1].UV.x = 31;
     carmesh->triangleVertices[1].UV.y = 0;
     carmesh->triangleVertices[2].pointID = 3;
     carmesh->triangleVertices[2].UV.x = 0;
-    carmesh->triangleVertices[2].UV.y = 64;
+    carmesh->triangleVertices[2].UV.y = 63;
     carmesh->triangleVertices[3].pointID = 1;
-    carmesh->triangleVertices[3].UV.x = 32;
+    carmesh->triangleVertices[3].UV.x = 31;
     carmesh->triangleVertices[3].UV.y = 0;
     carmesh->triangleVertices[4].pointID = 2;
-    carmesh->triangleVertices[4].UV.x = 32;
-    carmesh->triangleVertices[4].UV.y = 64;
+    carmesh->triangleVertices[4].UV.x = 31;
+    carmesh->triangleVertices[4].UV.y = 63;
     carmesh->triangleVertices[5].pointID = 3;
     carmesh->triangleVertices[5].UV.x = 0;
-    carmesh->triangleVertices[5].UV.y = 64;
+    carmesh->triangleVertices[5].UV.y = 63;
 }
 
 void MakeCube(Object3D* cube)
 {
-    cube->angle = 0.0;
+    cube->x_angle = 0.0;
+    cube->y_angle = 0.0;
+    cube->z_angle = 0.0;
     cube->scale = 1.0;
     cube->center.x = 159;
     cube->center.y = 99;
 
     cube->numPoints = 8;
-    cube->points = malloc(cube->numPoints * sizeof(Vec2));
-    cube->points[0].x = -8;
-    cube->points[0].y = 8;
-    cube->points[1].x = -8;
-    cube->points[1].y = -24;
-    cube->points[2].x = 24;
-    cube->points[2].y = -24;
-    cube->points[3].x = 24;
-    cube->points[3].y = 8;
-    cube->points[4].x = 16;
-    cube->points[4].y = 16;    
-    cube->points[5].x = -16;
-    cube->points[5].y = 16;
-    cube->points[6].x = -16;
-    cube->points[6].y = -16;
-    cube->points[7].x = 16;
-    cube->points[7].y = -16;
+    cube->points = malloc(cube->numPoints * sizeof(Vec3));
+    cube->points[0].x = -CUBE_SIZE;
+    cube->points[0].y = CUBE_SIZE;
+    cube->points[0].z = -CUBE_SIZE;
+    cube->points[1].x = -CUBE_SIZE;
+    cube->points[1].y = -CUBE_SIZE;
+    cube->points[1].z = -CUBE_SIZE;
+    cube->points[2].x = CUBE_SIZE;
+    cube->points[2].y = -CUBE_SIZE;
+    cube->points[2].z = -CUBE_SIZE;
+    cube->points[3].x = CUBE_SIZE;
+    cube->points[3].y = CUBE_SIZE;
+    cube->points[3].z = -CUBE_SIZE;
+    cube->points[4].x = CUBE_SIZE;
+    cube->points[4].y = CUBE_SIZE;
+    cube->points[4].z = CUBE_SIZE;    
+    cube->points[5].x = -CUBE_SIZE;
+    cube->points[5].y = CUBE_SIZE;
+    cube->points[5].z = CUBE_SIZE;
+    cube->points[6].x = -CUBE_SIZE;
+    cube->points[6].y = -CUBE_SIZE;
+    cube->points[6].z = CUBE_SIZE;
+    cube->points[7].x = CUBE_SIZE;
+    cube->points[7].y = -CUBE_SIZE;
+    cube->points[7].z = CUBE_SIZE;
 
     cube->numTriangles = 12;
     cube->triangleVertices = malloc((cube->numTriangles * 3) * sizeof(Vertex));
 
-    cube->transformedP = malloc(cube->numPoints * sizeof(Vec2));
-    memcpy(cube->transformedP, cube->points, sizeof(Vec2) * cube->numPoints);
+    cube->transformedP = malloc(cube->numPoints * sizeof(Vec3));
+    memcpy(cube->transformedP, cube->points, sizeof(Vec3) * cube->numPoints);
 }
 
 void updateMesh(Mesh2D* mesh)
@@ -109,7 +121,53 @@ void updateMesh(Mesh2D* mesh)
     }
 }
 
-void updateObject(Object3D* object)
+void update3DObject_X(Object3D* object)
+{
+    char i;
+    float cos_angle;
+    float sin_angle;
+    float old_y;
+    float old_z;
+    float new_y;
+    float new_z;
+    
+    for (i = 0; i < object->numPoints; i++)
+    {
+        old_y = object->points[i].y;
+        old_z = object->points[i].z;
+        cos_angle = cos(object->x_angle);
+        sin_angle = sin(object->x_angle);
+        new_y = (old_z * cos_angle - old_y * sin_angle); //* object->scale;
+        new_z = (old_z * sin_angle + old_y * cos_angle); //* object->scale;
+        object->transformedP[i].y = new_y;
+        object->transformedP[i].z = new_y;
+    }
+}
+
+void update3DObject_Y(Object3D* object)
+{
+    char i;
+    float cos_angle;
+    float sin_angle;
+    float old_x;
+    float old_z;
+    float new_x;
+    float new_z;
+    
+    for (i = 0; i < object->numPoints; i++)
+    {
+        old_x = object->points[i].x;
+        old_z = object->points[i].z;
+        cos_angle = cos(object->y_angle);
+        sin_angle = sin(object->y_angle);
+        new_x = (old_x * cos_angle - old_z * sin_angle); //* object->scale;
+        new_z = (old_x * sin_angle + old_z * cos_angle); //* object->scale;
+        object->transformedP[i].x = new_x;
+        object->transformedP[i].z = new_z;
+    }
+}
+
+void update3DObject_Z(Object3D* object)
 {
     char i;
     float cos_angle;
@@ -123,10 +181,10 @@ void updateObject(Object3D* object)
     {
         old_x = object->points[i].x;
         old_y = object->points[i].y;
-        cos_angle = cos(object->angle);
-        sin_angle = sin(object->angle);
-        new_x = (old_x * cos_angle - old_y * sin_angle) * object->scale;
-        new_y = (old_x * sin_angle + old_y * cos_angle) * object->scale;
+        cos_angle = cos(object->z_angle);
+        sin_angle = sin(object->z_angle);
+        new_x = (old_x * cos_angle - old_y * sin_angle); //* object->scale;
+        new_y = (old_x * sin_angle + old_y * cos_angle); //* object->scale;
         object->transformedP[i].x = new_x;
         object->transformedP[i].y = new_y;
     }
@@ -147,6 +205,9 @@ void draw3DCube(Object3D* cube)
 {
     int i = 0;
     Vec2_int p1, p2;
+    char X_str [20];
+    char Y_str [20];
+    char Z_str [20];
 
     while (i < cube->numPoints - 1)
     {
@@ -182,4 +243,13 @@ void draw3DCube(Object3D* cube)
     p2.x = cube->center.x + cube->transformedP[7].x;
     p2.y = cube->center.y + cube->transformedP[7].y;
     drawLineInt(p1, p2, COLOR_WHITE);
+
+    sprintf(X_str, "X: %f", cube->transformedP[0].x);
+    sprintf(Y_str, "Y: %f", cube->transformedP[0].y);
+    sprintf(Z_str, "Z: %f", cube->transformedP[0].z);
+    renderText(0, 0, X_str, COLOR_WHITE);
+    renderText(0, 10, Y_str, COLOR_WHITE);
+    renderText(0, 20, Z_str, COLOR_WHITE);
+
+    SET_PIXEL((int)(cube->center.x + cube->transformedP[0].x), (int)(cube->center.y + cube->transformedP[0].y), COLOR_RED);
 }
