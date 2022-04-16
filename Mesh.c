@@ -192,9 +192,9 @@ void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
 
 void applyObject3DRotation(Mesh3D* object)
 {
-    rotatePoints_Z(object->numPoints, object->points, object->transformedP, object->z_angle);
-    rotatePoints_X(object->numPoints, object->transformedP, object->transformedP, object->x_angle);
+    rotatePoints_X(object->numPoints, object->points, object->transformedP, object->x_angle);
     rotatePoints_Y(object->numPoints, object->transformedP, object->transformedP, object->y_angle);
+    rotatePoints_Z(object->numPoints, object->transformedP, object->transformedP, object->z_angle);
 }
 
 void draw2DMesh(Mesh2D* mesh)

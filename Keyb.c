@@ -131,22 +131,26 @@ void controlIngame()
     {
         //poly_array[4].transformedV[2] = change_vec_angle(poly_array[4].transformedV[2], RAD_15);
         object_array[0].x_angle += TURN_RATE;
+        applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_DOWN))
     {
         //poly_array[4].transformedV[2] = change_vec_angle(poly_array[4].transformedV[2], -RAD_15);
         object_array[0].x_angle -= TURN_RATE;
+        applyObject3DRotation(&object_array[0]);
     }
 
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
         object_array[0].y_angle -= TURN_RATE;
+        applyObject3DRotation(&object_array[0]);
     }
 
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
         object_array[0].y_angle += TURN_RATE;
+        applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_U))
@@ -156,6 +160,7 @@ void controlIngame()
         object_array[0].z_angle -= TURN_RATE;
         //updatePoly(&modObject);
         //updateMesh(&mesh_array[0]);
+        applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_I))
@@ -165,6 +170,7 @@ void controlIngame()
         object_array[0].z_angle += TURN_RATE;
         //updatePoly(&modObject);
         //updateMesh(&mesh_array[0]);
+        applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))

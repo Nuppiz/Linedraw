@@ -84,7 +84,7 @@ void main()
     while (running == 1)
     {
         processInput();
-        applyObject3DRotation(&object_array[0]);
+        //applyObject3DRotation(&object_array[0]);
         drawStuff();
         render();
         delay(10);
