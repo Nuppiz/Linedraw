@@ -121,7 +121,7 @@ void updateMesh(Mesh2D* mesh)
     }
 }
 
-void update3DObject_X(Object3D* object)
+void rotatePoints_X(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, float angle)
 {
     char i;
     float cos_angle;
@@ -131,20 +131,20 @@ void update3DObject_X(Object3D* object)
     float new_y;
     float new_z;
     
-    for (i = 0; i < object->numPoints; i++)
+    for (i = 0; i < numPoints; i++)
     {
-        old_y = object->points[i].y;
-        old_z = object->points[i].z;
-        cos_angle = cos(object->x_angle);
-        sin_angle = sin(object->x_angle);
+        old_y = originalPoints[i].y;
+        old_z = originalPoints[i].z;
+        cos_angle = cos(angle);
+        sin_angle = sin(angle);
         new_y = (old_z * cos_angle - old_y * sin_angle); //* object->scale;
         new_z = (old_z * sin_angle + old_y * cos_angle); //* object->scale;
-        object->transformedP[i].y = new_y;
-        object->transformedP[i].z = new_y;
+        rotatedPoints[i].y = new_y;
+        rotatedPoints[i].z = new_z;
     }
 }
 
-void update3DObject_Y(Object3D* object)
+void rotatePoints_Y(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, float angle)
 {
     char i;
     float cos_angle;
@@ -154,20 +154,20 @@ void update3DObject_Y(Object3D* object)
     float new_x;
     float new_z;
     
-    for (i = 0; i < object->numPoints; i++)
+    for (i = 0; i < numPoints; i++)
     {
-        old_x = object->points[i].x;
-        old_z = object->points[i].z;
-        cos_angle = cos(object->y_angle);
-        sin_angle = sin(object->y_angle);
+        old_x = originalPoints[i].x;
+        old_z = originalPoints[i].z;
+        cos_angle = cos(angle);
+        sin_angle = sin(angle);
         new_x = (old_x * cos_angle - old_z * sin_angle); //* object->scale;
         new_z = (old_x * sin_angle + old_z * cos_angle); //* object->scale;
-        object->transformedP[i].x = new_x;
-        object->transformedP[i].z = new_z;
+        rotatedPoints[i].x = new_x;
+        rotatedPoints[i].z = new_z;
     }
 }
 
-void update3DObject_Z(Object3D* object)
+void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, float angle)
 {
     char i;
     float cos_angle;
@@ -177,17 +177,26 @@ void update3DObject_Z(Object3D* object)
     float new_x;
     float new_y;
     
-    for (i = 0; i < object->numPoints; i++)
+    for (i = 0; i < numPoints; i++)
     {
-        old_x = object->points[i].x;
-        old_y = object->points[i].y;
-        cos_angle = cos(object->z_angle);
-        sin_angle = sin(object->z_angle);
+        old_x = originalPoints[i].x;
+        old_y = originalPoints[i].y;
+        cos_angle = cos(angle);
+        sin_angle = sin(angle);
         new_x = (old_x * cos_angle - old_y * sin_angle); //* object->scale;
         new_y = (old_x * sin_angle + old_y * cos_angle); //* object->scale;
-        object->transformedP[i].x = new_x;
-        object->transformedP[i].y = new_y;
+        rotatedPoints[i].x = new_x;
+        rotatedPoints[i].y = new_y;
     }
+}
+
+void applyObject3DRotation(Object3D *object)
+{
+    rotatePoints_Z(object->numPoints, object->transformedP, object->transformedP, object->z_angle);
+    delay(50);
+    rotatePoints_X(object->numPoints, object->transformedP, object->transformedP, object->x_angle);
+    delay(50);
+    rotatePoints_Y(object->numPoints, object->transformedP, object->transformedP, object->y_angle);
 }
 
 void draw2DMesh(Mesh2D* mesh)

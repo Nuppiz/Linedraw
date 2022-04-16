@@ -20,6 +20,7 @@
 #define CHARACTER_SIZE      72
 #define COLOR_WHITE         4
 #define COLOR_RED           176
+#define COLOR_BLUE          200
 
 /* Keyboard and control defines */
 #define KB_ARRAY_LENGTH     256

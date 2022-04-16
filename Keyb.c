@@ -131,46 +131,46 @@ void controlIngame()
     {
         //poly_array[4].transformedV[2] = change_vec_angle(poly_array[4].transformedV[2], RAD_15);
         object_array[0].x_angle += TURN_RATE;
-        update3DObject_X(&object_array[0]);
+        applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_DOWN))
     {
         //poly_array[4].transformedV[2] = change_vec_angle(poly_array[4].transformedV[2], -RAD_15);
         object_array[0].x_angle -= TURN_RATE;
-        update3DObject_X(&object_array[0]);
+        applyObject3DRotation(&object_array[0]);
     }
 
-    else if (KEY_IS_PRESSED(KEY_U))
-    {
-        object_array[0].y_angle -= TURN_RATE;
-        update3DObject_Y(&object_array[0]);
-    }
-
-    else if (KEY_IS_PRESSED(KEY_I))
-    {
-        object_array[0].y_angle += TURN_RATE;
-        update3DObject_Y(&object_array[0]);
-    }
-    
     else if (KEY_IS_PRESSED(KEY_LEFT))
     {
-        modObject.angle -= TURN_RATE;
-        mesh_array[0].angle -= TURN_RATE;
-        object_array[0].z_angle -= TURN_RATE;
-        updatePoly(&modObject);
-        updateMesh(&mesh_array[0]);
-        update3DObject_Z(&object_array[0]);
+        object_array[0].y_angle -= TURN_RATE;
+        applyObject3DRotation(&object_array[0]);
     }
-    
+
     else if (KEY_IS_PRESSED(KEY_RIGHT))
     {
-        modObject.angle += TURN_RATE;
-        mesh_array[0].angle += TURN_RATE;
+        object_array[0].y_angle += TURN_RATE;
+        applyObject3DRotation(&object_array[0]);
+    }
+    
+    else if (KEY_IS_PRESSED(KEY_U))
+    {
+        //modObject.angle -= TURN_RATE;
+        //mesh_array[0].angle -= TURN_RATE;
+        object_array[0].z_angle -= TURN_RATE;
+        //updatePoly(&modObject);
+        //updateMesh(&mesh_array[0]);
+        applyObject3DRotation(&object_array[0]);
+    }
+    
+    else if (KEY_IS_PRESSED(KEY_I))
+    {
+        //modObject.angle += TURN_RATE;
+        //mesh_array[0].angle += TURN_RATE;
         object_array[0].z_angle += TURN_RATE;
-        updatePoly(&modObject);
-        updateMesh(&mesh_array[0]);
-        update3DObject_Z(&object_array[0]);
+        //updatePoly(&modObject);
+        //updateMesh(&mesh_array[0]);
+        applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_ADD))
@@ -180,7 +180,7 @@ void controlIngame()
         object_array[0].scale *= 1.05;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
-        update3DObject_Z(&object_array[0]);
+        //applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
@@ -190,7 +190,7 @@ void controlIngame()
         object_array[0].scale /= 1.05;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
-        update3DObject_Z(&object_array[0]);
+        //applyObject3DRotation(&object_array[0]);
     }
 }
 
