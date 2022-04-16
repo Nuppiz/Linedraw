@@ -100,7 +100,6 @@ typedef struct
     int numTriangles;
     Vertex* triangleVertices;
     Vec2_int center;
-} Object3D;
-
+} Mesh3D;
 
 #endif

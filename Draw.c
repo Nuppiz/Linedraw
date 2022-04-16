@@ -11,7 +11,7 @@ extern Line line_array [];
 extern Line_int intline_array [];
 extern Mesh2D CarMesh;
 extern Texture CarTex;
-extern Object3D Cube;
+extern Mesh3D Cube;
 extern uint8_t* g_Keyboard;
 
 void drawSprite(int x, int y, Texture* texture)

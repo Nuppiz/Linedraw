@@ -6,7 +6,7 @@
 
 Mesh2D CarMesh;
 Texture CarTex;
-Object3D Cube;
+Mesh3D Cube;
 
 extern uint8_t far screen_buf [];
 
@@ -55,7 +55,7 @@ void MakeCarMesh(Mesh2D* carmesh)
     carmesh->triangleVertices[5].UV.y = 63;
 }
 
-void MakeCube(Object3D* cube)
+void MakeCube(Mesh3D* cube)
 {
     cube->x_angle = 0.0;
     cube->y_angle = 0.0;
@@ -190,12 +190,10 @@ void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
     }
 }
 
-void applyObject3DRotation(Object3D *object)
+void applyObject3DRotation(Mesh3D* object)
 {
-    rotatePoints_Z(object->numPoints, object->transformedP, object->transformedP, object->z_angle);
-    delay(50);
+    rotatePoints_Z(object->numPoints, object->points, object->transformedP, object->z_angle);
     rotatePoints_X(object->numPoints, object->transformedP, object->transformedP, object->x_angle);
-    delay(50);
     rotatePoints_Y(object->numPoints, object->transformedP, object->transformedP, object->y_angle);
 }
 
@@ -210,7 +208,7 @@ void draw2DMesh(Mesh2D* mesh)
     }
 }
 
-void draw3DCube(Object3D* cube)
+void draw3DCube(Mesh3D* cube)
 {
     int i = 0;
     Vec2_int p1, p2;
