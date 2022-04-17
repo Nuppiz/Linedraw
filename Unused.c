@@ -16,7 +16,7 @@ Vec2 change_vec_scale(Vec2 vector, float scale)
 
 void change_poly_angles(Polygon* poly, float angle)
 {
-    char i;
+    int i;
     
     for (i = 0; i < poly->numPoints; i++)
     {
@@ -27,7 +27,7 @@ void change_poly_angles(Polygon* poly, float angle)
 
 void change_poly_size(Polygon* poly, float scale)
 {
-    char i;
+    int i;
     
     for (i = 0; i < poly->numPoints; i++)
     {
@@ -161,7 +161,7 @@ void drawLineColorBlended(Vec2 p0, Vec2 p1, uint8_t st_col, uint8_t end_col)
 
 void test_draw()
 {
-    char i = 0;
+    int i = 0;
     float angle = 12;
     int radius = 90;
     Vec2 v1;

@@ -6,7 +6,7 @@
 void MakeCarMesh(Mesh2D* carmesh);
 void MakeCube(Mesh3D* cube);
 void updateMesh(Mesh2D* mesh);
-void applyObject3DRotation(Mesh3D* object);
+void updateMesh3D(Mesh3D* object);
 void draw2DMesh(Mesh2D* mesh);
 void draw3DCube(Mesh3D* cube);
 

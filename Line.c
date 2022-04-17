@@ -398,7 +398,7 @@ Vec2 change_vec_angle(Vec2 vector, float angle)
 }
 void change_poly_angles(Polygon* poly, float angle)
 {
-    char i;
+    int i;
     
     for (i = 0; i < poly->numPoints; i++)
     {
@@ -408,7 +408,7 @@ void change_poly_angles(Polygon* poly, float angle)
 }
 void change_poly_size(Polygon* poly, float scale)
 {
-    char i;
+    int i;
     
     for (i = 0; i < poly->numPoints; i++)
     {
@@ -418,7 +418,7 @@ void change_poly_size(Polygon* poly, float scale)
 
 void updatePoly(Polygon* poly)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_x;
@@ -441,7 +441,7 @@ void updatePoly(Polygon* poly)
 
 void updateMesh(Mesh2D* mesh)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_x;
@@ -1223,7 +1223,7 @@ void drawLineColorBlended(Vec2 p0, Vec2 p1, uint8_t st_col, uint8_t end_col)
 
 void test_draw()
 {
-    char i = 0;
+    int i = 0;
     float angle = 12;
     int radius = 90;
     Vec2 v1;
@@ -1275,7 +1275,7 @@ Polygon makeSquare(float angle, float side_length, float scale, uint8_t color)
 Polygon makePolygon(float angle, int numPoints, float radius, float scale, uint8_t color)
 {
     Polygon newPolygon;
-    char i = 0;
+    int i = 0;
     float angle_step = RAD_360/numPoints;
     
     newPolygon.numPoints = numPoints;
@@ -1302,7 +1302,7 @@ Polygon makePolygon(float angle, int numPoints, float radius, float scale, uint8
 Polygon makeShadedTriangle(float angle, int numPoints, float radius, float scale, uint8_t col_1, uint8_t col_2, uint8_t col_3)
 {
     Polygon newPolygon;
-    char i = 0;
+    int i = 0;
     float angle_step = RAD_360/numPoints;
     
     newPolygon.numPoints = numPoints;
@@ -1333,7 +1333,7 @@ Polygon makeShadedTriangle(float angle, int numPoints, float radius, float scale
 Polygon makeTexturedTriangle(float angle, int numPoints, float radius, float scale, Vec2 uv_1, Vec2 uv_2, Vec2 uv_3, Vec2_int center)
 {
     Polygon newPolygon;
-    char i = 0;
+    int i = 0;
     float angle_step = RAD_360/numPoints;
     
     newPolygon.numPoints = numPoints;
@@ -1858,7 +1858,7 @@ void draw2DMesh(Mesh2D* mesh)
 
 void draw_polygon(Polygon* poly, int center_x, int center_y)
 {
-    char i = 0;
+    int i = 0;
     Vec2 start_loc;
     Vec2 end_loc;
     
@@ -1886,7 +1886,7 @@ void draw_polygon(Polygon* poly, int center_x, int center_y)
 
 void draw_polygon_int(Polygon* poly, int center_x, int center_y)
 {
-    char i = 0;
+    int i = 0;
     Vec2_int start_loc;
     Vec2_int end_loc;
     
@@ -1914,7 +1914,7 @@ void draw_polygon_int(Polygon* poly, int center_x, int center_y)
 
 void draw_lines()
 {
-    char i = 0;
+    int i = 0;
     Vec2 p0 = {100.0, 185.0};
     Vec2 p1 = {170.0, 165.0};
     
@@ -1930,7 +1930,7 @@ void draw_lines()
 
 void draw_polygons()
 {
-    char i = 0;
+    int i = 0;
     int x = 100;
     int y = 100;
     

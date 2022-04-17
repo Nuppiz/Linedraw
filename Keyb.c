@@ -174,7 +174,6 @@ void controlIngame()
         object_array[0].scale *= 1.05;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
-        //applyObject3DRotation(&object_array[0]);
     }
     
     else if (KEY_IS_PRESSED(KEY_SUB))
@@ -184,7 +183,6 @@ void controlIngame()
         object_array[0].scale /= 1.05;
         updatePoly(&modObject);
         updateMesh(&mesh_array[0]);
-        //applyObject3DRotation(&object_array[0]);
     }
 }
 

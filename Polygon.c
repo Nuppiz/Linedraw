@@ -8,7 +8,7 @@ extern Polygon poly_array [];
 
 void updatePoly(Polygon* poly)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_x;
@@ -57,7 +57,7 @@ Polygon makeSquare(float angle, float side_length, float scale, uint8_t color)
 Polygon makePolygon(float angle, int numPoints, float radius, float scale, uint8_t color)
 {
     Polygon newPolygon;
-    char i = 0;
+    int i = 0;
     float angle_step = RAD_360/numPoints;
     
     newPolygon.numPoints = numPoints;
@@ -84,7 +84,7 @@ Polygon makePolygon(float angle, int numPoints, float radius, float scale, uint8
 Polygon makeShadedTriangle(float angle, int numPoints, float radius, float scale, uint8_t col_1, uint8_t col_2, uint8_t col_3)
 {
     Polygon newPolygon;
-    char i = 0;
+    int i = 0;
     float angle_step = RAD_360/numPoints;
     
     newPolygon.numPoints = numPoints;
@@ -115,7 +115,7 @@ Polygon makeShadedTriangle(float angle, int numPoints, float radius, float scale
 Polygon makeTexturedTriangle(float angle, int numPoints, float radius, float scale, Vec2 uv_1, Vec2 uv_2, Vec2 uv_3, Vec2_int center)
 {
     Polygon newPolygon;
-    char i = 0;
+    int i = 0;
     float angle_step = RAD_360/numPoints;
     
     newPolygon.numPoints = numPoints;

@@ -100,7 +100,7 @@ void MakeCube(Mesh3D* cube)
 
 void updateMesh(Mesh2D* mesh)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_x;
@@ -123,7 +123,7 @@ void updateMesh(Mesh2D* mesh)
 
 void rotatePoints_X(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, float angle)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_y;
@@ -137,8 +137,8 @@ void rotatePoints_X(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         old_z = originalPoints[i].z;
         cos_angle = cos(angle);
         sin_angle = sin(angle);
-        new_y = -(old_z * cos_angle - old_y * sin_angle); //* object->scale;
-        new_z = (old_z * sin_angle + old_y * cos_angle); //* object->scale;
+        new_y = -(old_z * cos_angle - old_y * sin_angle);
+        new_z = (old_z * sin_angle + old_y * cos_angle);
         rotatedPoints[i].y = new_y;
         rotatedPoints[i].z = new_z;
     }
@@ -146,7 +146,7 @@ void rotatePoints_X(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
 
 void rotatePoints_Y(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, float angle)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_x;
@@ -160,8 +160,8 @@ void rotatePoints_Y(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         old_z = originalPoints[i].z;
         cos_angle = cos(angle);
         sin_angle = sin(angle);
-        new_x = (old_x * cos_angle - old_z * sin_angle); //* object->scale;
-        new_z = (old_x * sin_angle + old_z * cos_angle); //* object->scale;
+        new_x = (old_x * cos_angle - old_z * sin_angle);
+        new_z = (old_x * sin_angle + old_z * cos_angle);
         rotatedPoints[i].x = new_x;
         rotatedPoints[i].z = new_z;
     }
@@ -169,7 +169,7 @@ void rotatePoints_Y(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
 
 void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, float angle)
 {
-    char i;
+    int i;
     float cos_angle;
     float sin_angle;
     float old_x;
@@ -183,21 +183,47 @@ void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         old_y = originalPoints[i].y;
         cos_angle = cos(angle);
         sin_angle = sin(angle);
-        new_x = (old_x * cos_angle - old_y * sin_angle); //* object->scale;
-        new_y = (old_x * sin_angle + old_y * cos_angle); //* object->scale;
+        new_x = (old_x * cos_angle - old_y * sin_angle);
+        new_y = (old_x * sin_angle + old_y * cos_angle);
         rotatedPoints[i].x = new_x;
         rotatedPoints[i].y = new_y;
     }
 }
 
-void applyObject3DRotation(Mesh3D* object)
+void scalePoints(int numPoints, Vec3* originalPoints, Vec3* scaledPoints, float scale)
+{
+    int i;
+    float old_x;
+    float old_y;
+    float old_z;
+    float new_x;
+    float new_y;
+    float new_z;
+    
+    for (i = 0; i < numPoints; i++)
+    {
+        old_x = originalPoints[i].x;
+        old_y = originalPoints[i].y;
+        old_z = originalPoints[i].z;
+        new_x = old_x * scale;
+        new_y = old_y * scale;
+        new_z = old_z * scale;
+        scaledPoints[i].x = new_x;
+        scaledPoints[i].y = new_y;
+        scaledPoints[i].z = new_z;
+    }
+}
+
+void updateMesh3D(Mesh3D* object)
 {
     char X_axis_str [20];
     char Y_axis_str [20];
     char Z_axis_str [20];
-    rotatePoints_X(object->numPoints, object->points, object->transformedP, object->x_angle);
+    memcpy(object->transformedP, object->points, sizeof(Vec3) * object->numPoints);
+    rotatePoints_X(object->numPoints, object->transformedP, object->transformedP, object->x_angle);
     rotatePoints_Y(object->numPoints, object->transformedP, object->transformedP, object->y_angle);
     rotatePoints_Z(object->numPoints, object->transformedP, object->transformedP, object->z_angle);
+    scalePoints(object->numPoints, object->transformedP, object->transformedP, object->scale);
     sprintf(X_axis_str, "X ANGLE: %f", object->x_angle);
     sprintf(Y_axis_str, "Y ANGLE: %f", object->y_angle);
     sprintf(Z_axis_str, "Z ANGLE: %f", object->z_angle);

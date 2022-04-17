@@ -64,7 +64,7 @@ void drawSprite(int x, int y, Texture* texture)
 
 void drawPolygon(Polygon* poly, int center_x, int center_y)
 {
-    char i = 0;
+    int i = 0;
     Vec2 start_loc;
     Vec2 end_loc;
     
@@ -92,7 +92,7 @@ void drawPolygon(Polygon* poly, int center_x, int center_y)
 
 void drawPolygonInt(Polygon* poly, int center_x, int center_y)
 {
-    char i = 0;
+    int i = 0;
     Vec2_int start_loc;
     Vec2_int end_loc;
     
@@ -120,7 +120,7 @@ void drawPolygonInt(Polygon* poly, int center_x, int center_y)
 
 void drawLines()
 {
-    char i = 0;
+    int i = 0;
     
     while (i < 5)
     {
@@ -133,7 +133,7 @@ void drawLines()
 
 void drawPolygons()
 {
-    char i = 0;
+    int i = 0;
     int x = 100;
     int y = 100;
     
