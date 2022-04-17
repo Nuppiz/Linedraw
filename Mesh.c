@@ -137,7 +137,7 @@ void rotatePoints_X(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         old_z = originalPoints[i].z;
         cos_angle = cos(angle);
         sin_angle = sin(angle);
-        new_y = (old_z * cos_angle - old_y * sin_angle); //* object->scale;
+        new_y = -(old_z * cos_angle - old_y * sin_angle); //* object->scale;
         new_z = (old_z * sin_angle + old_y * cos_angle); //* object->scale;
         rotatedPoints[i].y = new_y;
         rotatedPoints[i].z = new_z;
@@ -192,9 +192,18 @@ void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
 
 void applyObject3DRotation(Mesh3D* object)
 {
+    char X_axis_str [20];
+    char Y_axis_str [20];
+    char Z_axis_str [20];
     rotatePoints_X(object->numPoints, object->points, object->transformedP, object->x_angle);
     rotatePoints_Y(object->numPoints, object->transformedP, object->transformedP, object->y_angle);
     rotatePoints_Z(object->numPoints, object->transformedP, object->transformedP, object->z_angle);
+    sprintf(X_axis_str, "X ANGLE: %f", object->x_angle);
+    sprintf(Y_axis_str, "Y ANGLE: %f", object->y_angle);
+    sprintf(Z_axis_str, "Z ANGLE: %f", object->z_angle);
+    renderText(0, 30, X_axis_str, COLOR_WHITE);
+    renderText(0, 40, Y_axis_str, COLOR_WHITE);
+    renderText(0, 50, Z_axis_str, COLOR_WHITE);
 }
 
 void draw2DMesh(Mesh2D* mesh)

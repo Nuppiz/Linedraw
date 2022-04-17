@@ -2,6 +2,8 @@
 #include "Defines.h"
 #include "Structs.h"
 
+/* Polygon creation and modification functions */
+
 extern Polygon poly_array [];
 
 void updatePoly(Polygon* poly)

@@ -1,14 +1,9 @@
 #ifndef POLYGON_H
 #define POLYGON_H
 
-/* Polygon creation and modification functions */
+#include "Structs.h"
 
-void updatePoly();
+void updatePoly(Polygon* poly);
 void createPolygons();
-
-makeSquare();
-makePolygon();
-makeShadedTriangle();
-makeTexturedTriangle();
 
 #endif

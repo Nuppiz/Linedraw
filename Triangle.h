@@ -1,7 +1,10 @@
 #ifndef TRIANGLE_H
 #define TRIANGLE_H
 
-void drawShadedTriangle();
-void draw2DMeshTriangle();
+#include "Structs.h"
+
+void drawShadedTriangle(Polygon* triangle);
+void drawTexturedTriangle(Polygon* triangle);
+void draw2DMeshTriangle(Polygon* triangle);
 
 #endif

@@ -1,12 +1,13 @@
 #ifndef MESH_H
 #define MESH_H
 
-void MakeCarMesh();
-void MakeCube();
-void updateMesh();
-void applyObject3DRotation();
-void draw2DMeshTriangle();
-void draw2DMesh();
-void draw3DCube();
+#include "Structs.h"
+
+void MakeCarMesh(Mesh2D* carmesh);
+void MakeCube(Mesh3D* cube);
+void updateMesh(Mesh2D* mesh);
+void applyObject3DRotation(Mesh3D* object);
+void draw2DMesh(Mesh2D* mesh);
+void draw3DCube(Mesh3D* cube);
 
 #endif
