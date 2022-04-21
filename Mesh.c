@@ -106,24 +106,24 @@ void MakeCube(Mesh3D* cube)
     cube->triangleVertices = malloc((cube->numTriangles * 3) * sizeof(Vertex));
     cube->faces = malloc((cube->numFaces) * sizeof(Face));
     // back face
-    cube->triangleVertices[0].pointID = 0;
+    cube->triangleVertices[0].pointID = 1;
     cube->triangleVertices[0].UV.x = 0;
-    cube->triangleVertices[0].UV.y = 31;
-    cube->triangleVertices[1].pointID = 1;
-    cube->triangleVertices[1].UV.x = 0;
+    cube->triangleVertices[0].UV.y = 0;
+    cube->triangleVertices[1].pointID = 2;
+    cube->triangleVertices[1].UV.x = 31;
     cube->triangleVertices[1].UV.y = 0;
-    cube->triangleVertices[2].pointID = 2;
+    cube->triangleVertices[2].pointID = 3;
     cube->triangleVertices[2].UV.x = 31;
-    cube->triangleVertices[2].UV.y = 0;
-    cube->triangleVertices[3].pointID = 2;
+    cube->triangleVertices[2].UV.y = 31;
+    cube->triangleVertices[3].pointID = 3;
     cube->triangleVertices[3].UV.x = 31;
-    cube->triangleVertices[3].UV.y = 0;
-    cube->triangleVertices[4].pointID = 3;
-    cube->triangleVertices[4].UV.x = 31;
+    cube->triangleVertices[3].UV.y = 31;
+    cube->triangleVertices[4].pointID = 0;
+    cube->triangleVertices[4].UV.x = 0;
     cube->triangleVertices[4].UV.y = 31;
-    cube->triangleVertices[5].pointID = 0;
+    cube->triangleVertices[5].pointID = 1;
     cube->triangleVertices[5].UV.x = 0;
-    cube->triangleVertices[5].UV.y = 31;
+    cube->triangleVertices[5].UV.y = 0;
     cube->faces[0].texture = &BeaWater;
     // right face
     cube->triangleVertices[6].pointID = 2;
@@ -216,8 +216,8 @@ void MakeCube(Mesh3D* cube)
     cube->triangleVertices[32].UV.x = 0;
     cube->triangleVertices[32].UV.y = 31;
     cube->triangleVertices[33].pointID = 0;
-    cube->triangleVertices[32].UV.x = 0;
-    cube->triangleVertices[32].UV.y = 31;
+    cube->triangleVertices[33].UV.x = 0;
+    cube->triangleVertices[33].UV.y = 31;
     cube->triangleVertices[34].pointID = 3;
     cube->triangleVertices[34].UV.x = 31;
     cube->triangleVertices[34].UV.y = 31;

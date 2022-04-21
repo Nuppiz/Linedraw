@@ -161,7 +161,8 @@ void drawStuff()
     else if (KEY_IS_PRESSED (KEY_3))
         draw2DMesh(&CarMesh);    
     else if (KEY_IS_PRESSED (KEY_4))*/
-    //drawFilled3DCube(&Cube);
-    drawTextured3DCube(&Cube);
     //draw3DCube(&Cube);
+    //drawFilled3DCube(&Cube);
+    //updateMesh3D(&Cube);
+    drawTextured3DCube(&Cube);
 }
