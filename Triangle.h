@@ -6,5 +6,7 @@
 void drawShadedTriangle(Polygon* triangle);
 void drawTexturedTriangle(Polygon* triangle);
 void draw2DMeshTriangle(Polygon* triangle);
+void draw3DCubeTriangle(Mesh3D* mesh, int triangle_ID, uint8_t color);
+void draw3DCubeTriangleTex(Mesh3D* mesh, int triangle_ID, int face_ID);
 
 #endif

@@ -19,8 +19,10 @@
 #define TILE_HEIGHT         8
 #define CHARACTER_SIZE      72
 #define COLOR_WHITE         4
+#define COLOR_GREEN         112
 #define COLOR_RED           176
 #define COLOR_BLUE          200
+#define COLOR_PURPLE        252
 
 /* Keyboard and control defines */
 #define KB_ARRAY_LENGTH     256

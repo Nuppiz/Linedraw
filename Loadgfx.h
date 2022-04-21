@@ -3,5 +3,6 @@
 
 void loadGfx(char* filename, uint8_t* destination, uint16_t data_size);
 void loadTexture(char* filename, Texture* texture, int width, int height, int transparent);
+void loadAllTextures();
 
 #endif

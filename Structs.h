@@ -92,6 +92,11 @@ typedef struct
 
 typedef struct
 {
+    Texture* texture;
+} Face;
+
+typedef struct
+{
     float x_angle, y_angle, z_angle;
     float scale;
     int numPoints;
@@ -99,6 +104,8 @@ typedef struct
     Vec3* transformedP;
     int numTriangles;
     Vertex* triangleVertices;
+    int numFaces;
+    Face* faces;
     Vec2_int center;
 } Mesh3D;
 

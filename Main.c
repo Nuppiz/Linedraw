@@ -13,11 +13,9 @@
 
 int running = 1;
 uint8_t tile [10000];
-uint8_t car [2048];
 
 extern Palette NewPalette;
 extern Mesh2D CarMesh;
-extern Texture CarTex;
 extern Mesh3D Cube;
 
 extern uint8_t far screen_buf [];
@@ -69,7 +67,7 @@ void main()
     setPalette_VGA(&NewPalette);
     
     loadGfx("WALL.7UP", tile, 10000);
-    loadTexture("CAR.7UP", &CarTex, 32, 64, TRUE);
+    loadAllTextures();
     loadFont();
 
     createPolygons();

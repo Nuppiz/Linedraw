@@ -144,6 +144,35 @@ void plotTriangleLine(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge)
     }
 }
 
+void plotTriangleLineVec3(Vec3 p1, Vec3 p2, Vec2_int center, Span* edge)
+{
+    uint8_t color;
+    
+    float offset_y;
+    float offset_x;
+    
+    float x_diff = (p2.x - p1.x);
+    float y_diff = (p2.y - p1.y);
+   
+    float slope = 0.0;
+    
+    int y_sign = SIGN(y_diff);
+    int x, y;
+    
+    y_diff = fabs(y_diff);
+    
+    slope = x_diff / y_diff;
+        
+    for (offset_y = 0; offset_y < y_diff; offset_y++)
+    {
+        offset_x = offset_y * slope;
+        x = (int)(center.x + p1.x + offset_x);
+        y = (int)(center.y + p1.y + offset_y) * y_sign;
+        edge->offset[y] = x;
+        //SET_PIXEL(edge->offset[y], y, color);
+    }
+}
+
 void plotTriangleLineColorBlended(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, uint8_t color_1, uint8_t color_2)
 {
     float color = color_1;
@@ -297,6 +326,91 @@ void plotTriangleLineTexture(Vec2 p1, Vec2 p2, Vec2_int center, Span* edge, Vec2
 	}
 }
 
+void plotTriangleLineTextureVec3(Vec3 p1, Vec3 p2, Vec2_int center, Span* edge, Vec2 tex_start, Vec2 tex_end)
+{
+    Vec2 uv;
+    
+    float offset_y;
+    float offset_x;
+    
+    float x_diff = (p2.x - p1.x);
+    float y_diff = (p2.y - p1.y);
+	
+    float u_diff = (tex_end.x - tex_start.x);
+    float v_diff = (tex_end.y - tex_start.y);
+    
+    float u_ratio;
+    float v_ratio;
+    
+    float slope = 0.0;
+    
+    int y_sign = SIGN(y_diff);
+	int x_sign = SIGN(x_diff);
+	
+    int x, y;
+	
+	uint8_t test_color;
+    
+	uv.x = tex_start.x;
+	uv.y = tex_start.y;
+    y_diff = fabs(y_diff)+1;
+	x_diff = fabs(x_diff)+1;
+	
+    if (y_diff > x_diff)
+    {
+	    slope = (x_diff / y_diff) * x_sign;
+	    u_ratio = u_diff / y_diff;
+	    v_ratio = v_diff / y_diff;
+
+        for (offset_y = 0; offset_y < y_diff; offset_y++)
+        {
+            offset_x = offset_y * slope;
+            x = (int)(center.x + p1.x + offset_x);
+            y = (int)(center.y + p1.y + (offset_y * y_sign));
+            edge->offset[y] = x;
+            edge->texture[y].x = uv.x;
+            edge->texture[y].y = uv.y;
+			uv.x += u_ratio;
+            uv.y += v_ratio;
+        }
+    }
+    
+    else if (x_diff > y_diff)
+    {  
+        slope = (y_diff / x_diff) * y_sign;
+	    u_ratio = u_diff / x_diff;
+	    v_ratio = v_diff / x_diff;
+            
+        for (offset_x = 0; offset_x < x_diff; offset_x++)
+        {
+            offset_y = offset_x * slope;
+            x = (int)(center.x + p1.x + (offset_x * x_sign));
+            y = (int)(center.y + p1.y + offset_y);
+            edge->offset[y] = x;
+            edge->texture[y].x = uv.x;
+            edge->texture[y].y = uv.y;
+			uv.x += u_ratio;
+            uv.y += v_ratio;
+        }
+    }
+	
+	/* for debugging purposes
+	if (KEY_IS_PRESSED(KEY_W))
+	{
+	    if (edge == &LeftEdge)
+	        test_color = 32;
+	    
+	    else if (edge == & RightEdge)
+	        test_color = 40;
+			
+		p1.x += center.x;
+		p1.y += center.y;
+		p2.x += center.x;
+		p2.y += center.y;
+		drawLine(p1, p2, test_color);
+	}*/
+}
+
 void fillSpansColorBlendedInt(int top, int bottom)
 {
     int line, start_x, end_x;
@@ -401,6 +515,18 @@ void sortPair(Vec2* v0, Vec2* v1)
     }
 }
 
+void sortPairVec3(Vec3* v0, Vec3* v1)
+{
+    Vec3 temp;
+    
+    if (v0->y > v1->y)
+    {
+        temp = *v0;
+        *v0 = *v1;
+        *v1 = temp;
+    }
+}
+
 void sortPairWithColor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
 {
     Vec2 temp;
@@ -420,6 +546,22 @@ void sortPairWithColor(Vec2* v0, Vec2* v1, uint8_t* color1, uint8_t* color2)
 void sortPairWithPoint(Vec2* v0, Vec2* v1, Vec2* p0, Vec2* p1)
 {
     Vec2 temp;
+    Vec2 point_temp;
+    
+    if (v0->y > v1->y)
+    {
+        temp = *v0;
+        point_temp = *p0;
+        *v0 = *v1;
+        *p0 = *p1;
+        *v1 = temp;
+        *p1 = point_temp;
+    }
+}
+
+void sortPairWithPointVec3(Vec3* v0, Vec3* v1, Vec2* p0, Vec2* p1)
+{
+    Vec3 temp;
     Vec2 point_temp;
     
     if (v0->y > v1->y)
@@ -637,4 +779,83 @@ void draw2DMeshTriangle(Mesh2D* mesh, int triangle_ID)
         plotTriangleLineTexture(A, C, center, &RightEdge, point_a, point_c);
     }
     fillSpansMeshTextured(center.y + A.y, center.y + C.y, mesh->texture);
+}
+
+void draw3DCubeTriangle(Mesh3D* mesh, int triangle_ID, uint8_t color)
+{    
+    Vec3 A, B, C, point_a, point_b, point_c;
+    Vec3 AB, AC;
+    Vec2_int center = mesh->center;
+    float cross_product;
+    
+    A = mesh->transformedP[mesh->triangleVertices[0 + triangle_ID * 3].pointID];
+    B = mesh->transformedP[mesh->triangleVertices[1 + triangle_ID * 3].pointID];
+    C = mesh->transformedP[mesh->triangleVertices[2 + triangle_ID * 3].pointID];
+    
+    sortPairVec3(&A, &B);
+    sortPairVec3(&A, &C);
+    sortPairVec3(&B, &C);
+    
+    AB.x = B.x - A.x;
+    AB.y = B.y - A.y;
+    AC.x = C.x - A.x;
+    AC.y = C.y - A.y;
+    
+    cross_product = (AB.x * AC.y) - (AB.y * AC.x);
+    
+    if (cross_product > 0)
+    {
+        plotTriangleLineVec3(A, B, center, &RightEdge);
+        plotTriangleLineVec3(B, C, center, &RightEdge);
+        plotTriangleLineVec3(A, C, center, &LeftEdge);
+    }
+    else
+    {
+        plotTriangleLineVec3(A, B, center, &LeftEdge);
+        plotTriangleLineVec3(B, C, center, &LeftEdge);
+        plotTriangleLineVec3(A, C, center, &RightEdge);
+    }
+    fillSpans(center.y + A.y, center.y + C.y, color);
+}
+
+void draw3DCubeTriangleTex(Mesh3D* mesh, int triangle_ID, int face_ID)
+{    
+    Vec3 A, B, C;
+    Vec2 point_a, point_b, point_c;
+    Vec3 AB, AC;
+    Vec2_int center = mesh->center;
+    float cross_product;
+    
+    A = mesh->transformedP[mesh->triangleVertices[0 + triangle_ID * 3].pointID];
+    B = mesh->transformedP[mesh->triangleVertices[1 + triangle_ID * 3].pointID];
+    C = mesh->transformedP[mesh->triangleVertices[2 + triangle_ID * 3].pointID];
+    
+    point_a = mesh->triangleVertices[0 + triangle_ID * 3].UV;
+    point_b = mesh->triangleVertices[1 + triangle_ID * 3].UV;
+    point_c = mesh->triangleVertices[2 + triangle_ID * 3].UV;
+    
+    sortPairWithPointVec3(&A, &B, &point_a, &point_b);
+    sortPairWithPointVec3(&A, &C, &point_a, &point_c);
+    sortPairWithPointVec3(&B, &C, &point_b, &point_c);
+    
+    AB.x = B.x - A.x;
+    AB.y = B.y - A.y;
+    AC.x = C.x - A.x;
+    AC.y = C.y - A.y;
+    
+    cross_product = (AB.x * AC.y) - (AB.y * AC.x);
+    
+    if (cross_product > 0)
+    {
+        plotTriangleLineTextureVec3(A, B, center, &RightEdge, point_a, point_b);
+        plotTriangleLineTextureVec3(B, C, center, &RightEdge, point_b, point_c);
+        plotTriangleLineTextureVec3(A, C, center, &LeftEdge, point_a, point_c);
+    }
+    else
+    {
+        plotTriangleLineTextureVec3(A, B, center, &LeftEdge, point_a, point_b);
+        plotTriangleLineTextureVec3(B, C, center, &LeftEdge, point_b, point_c);
+        plotTriangleLineTextureVec3(A, C, center, &RightEdge, point_a, point_c);
+    }
+    fillSpansMeshTextured(center.y + A.y, center.y + C.y, mesh->faces[face_ID].texture);
 }
