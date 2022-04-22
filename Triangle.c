@@ -781,16 +781,16 @@ void draw2DMeshTriangle(Mesh2D* mesh, int triangle_ID)
     fillSpansMeshTextured(center.y + A.y, center.y + C.y, mesh->texture);
 }
 
-void draw3DCubeTriangle(Mesh3D* mesh, int triangle_ID, uint8_t color)
+void draw3DCubeTriangle(Mesh3D* cube, int triangle_ID, uint8_t color)
 {    
     Vec3 A, B, C, point_a, point_b, point_c;
     Vec3 AB, AC;
-    Vec2_int center = mesh->center;
+    Vec2_int center = cube->center;
     float cross_product;
     
-    A = mesh->transformedP[mesh->triangleVertices[0 + triangle_ID * 3].pointID];
-    B = mesh->transformedP[mesh->triangleVertices[1 + triangle_ID * 3].pointID];
-    C = mesh->transformedP[mesh->triangleVertices[2 + triangle_ID * 3].pointID];
+    A = cube->transformedP[cube->triangleVertices[0 + triangle_ID * 3].pointID];
+    B = cube->transformedP[cube->triangleVertices[1 + triangle_ID * 3].pointID];
+    C = cube->transformedP[cube->triangleVertices[2 + triangle_ID * 3].pointID];
     
     sortPairVec3(&A, &B);
     sortPairVec3(&A, &C);
@@ -818,21 +818,21 @@ void draw3DCubeTriangle(Mesh3D* mesh, int triangle_ID, uint8_t color)
     fillSpans(center.y + A.y, center.y + C.y, color);
 }
 
-void draw3DCubeTriangleTex(Mesh3D* mesh, int triangle_ID, int face_ID)
+void draw3DCubeTriangleTex(Mesh3D* cube, int triangle_ID, int side_ID)
 {    
     Vec3 A, B, C;
     Vec2 point_a, point_b, point_c;
     Vec3 AB, AC;
-    Vec2_int center = mesh->center;
+    Vec2_int center = cube->center;
     float cross_product;
     
-    A = mesh->transformedP[mesh->triangleVertices[0 + triangle_ID * 3].pointID];
-    B = mesh->transformedP[mesh->triangleVertices[1 + triangle_ID * 3].pointID];
-    C = mesh->transformedP[mesh->triangleVertices[2 + triangle_ID * 3].pointID];
+    A = cube->transformedP[cube->triangleVertices[0 + triangle_ID * 3].pointID];
+    B = cube->transformedP[cube->triangleVertices[1 + triangle_ID * 3].pointID];
+    C = cube->transformedP[cube->triangleVertices[2 + triangle_ID * 3].pointID];
     
-    point_a = mesh->triangleVertices[0 + triangle_ID * 3].UV;
-    point_b = mesh->triangleVertices[1 + triangle_ID * 3].UV;
-    point_c = mesh->triangleVertices[2 + triangle_ID * 3].UV;
+    point_a = cube->triangleVertices[0 + triangle_ID * 3].UV;
+    point_b = cube->triangleVertices[1 + triangle_ID * 3].UV;
+    point_c = cube->triangleVertices[2 + triangle_ID * 3].UV;
     
     sortPairWithPointVec3(&A, &B, &point_a, &point_b);
     sortPairWithPointVec3(&A, &C, &point_a, &point_c);
@@ -857,5 +857,47 @@ void draw3DCubeTriangleTex(Mesh3D* mesh, int triangle_ID, int face_ID)
         plotTriangleLineTextureVec3(B, C, center, &LeftEdge, point_b, point_c);
         plotTriangleLineTextureVec3(A, C, center, &RightEdge, point_a, point_c);
     }
-    fillSpansMeshTextured(center.y + A.y, center.y + C.y, mesh->faces[face_ID].texture);
+    fillSpansMeshTextured(center.y + A.y, center.y + C.y, cube->sides[side_ID].texture);
+}
+
+void draw3DCubeTriangleTexAlt(Mesh3D* cube, int triangle_ID, int side_ID)
+{    
+    Vec3 A, B, C;
+    Vec2 point_a, point_b, point_c;
+    Vec3 AB, AC;
+    Vec2_int center = cube->center;
+    float cross_product;
+    
+    A = cube->transformedP[cube->sides[side_ID].triangles[triangle_ID].p0];
+    B = cube->transformedP[cube->sides[side_ID].triangles[triangle_ID].p1];
+    C = cube->transformedP[cube->sides[side_ID].triangles[triangle_ID].p2];
+    
+    point_a = cube->UVCoords[cube->sides[side_ID].triangles[triangle_ID].uv0];
+    point_b = cube->UVCoords[cube->sides[side_ID].triangles[triangle_ID].uv1];
+    point_c = cube->UVCoords[cube->sides[side_ID].triangles[triangle_ID].uv2];
+    
+    sortPairWithPointVec3(&A, &B, &point_a, &point_b);
+    sortPairWithPointVec3(&A, &C, &point_a, &point_c);
+    sortPairWithPointVec3(&B, &C, &point_b, &point_c);
+    
+    AB.x = B.x - A.x;
+    AB.y = B.y - A.y;
+    AC.x = C.x - A.x;
+    AC.y = C.y - A.y;
+    
+    cross_product = (AB.x * AC.y) - (AB.y * AC.x);
+    
+    if (cross_product > 0)
+    {
+        plotTriangleLineTextureVec3(A, B, center, &RightEdge, point_a, point_b);
+        plotTriangleLineTextureVec3(B, C, center, &RightEdge, point_b, point_c);
+        plotTriangleLineTextureVec3(A, C, center, &LeftEdge, point_a, point_c);
+    }
+    else
+    {
+        plotTriangleLineTextureVec3(A, B, center, &LeftEdge, point_a, point_b);
+        plotTriangleLineTextureVec3(B, C, center, &LeftEdge, point_b, point_c);
+        plotTriangleLineTextureVec3(A, C, center, &RightEdge, point_a, point_c);
+    }
+    fillSpansMeshTextured(center.y + A.y, center.y + C.y, cube->sides[side_ID].texture);
 }

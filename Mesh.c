@@ -5,17 +5,10 @@
 /* Mesh- and wireframe-related functions */
 
 Mesh2D CarMesh;
-Texture CarTex;
 Mesh3D Cube;
 
-Texture BeaWater;
-Texture Bush;
-Texture Concrete;
-Texture GrasSand;
-Texture Trees;
-Texture Wall;
-
 extern uint8_t far screen_buf [];
+extern Texture Textures[];
 
 void MakeCarMesh(Mesh2D* carmesh)
 {
@@ -38,7 +31,7 @@ void MakeCarMesh(Mesh2D* carmesh)
     carmesh->transformedP = malloc(carmesh->numPoints * sizeof(Vec2));
     memcpy(carmesh->transformedP, carmesh->points, sizeof(Vec2) * carmesh->numPoints);
 
-    carmesh->texture = &CarTex;
+    carmesh->texture = &Textures[CAR];
     carmesh->numTriangles = 2;
 
     carmesh->triangleVertices = malloc((carmesh->numTriangles * 3) * sizeof(Vertex));
@@ -60,6 +53,26 @@ void MakeCarMesh(Mesh2D* carmesh)
     carmesh->triangleVertices[5].pointID = 3;
     carmesh->triangleVertices[5].UV.x = 0;
     carmesh->triangleVertices[5].UV.y = 63;
+}
+
+Side MakeCubeSide(uint16_t p0, uint16_t p1, uint16_t p2, uint16_t p3)
+{
+    Side newSide;
+
+    newSide.triangles[0].p0 = p0;
+    newSide.triangles[0].uv0 = 0;
+    newSide.triangles[0].p1 = p1;
+    newSide.triangles[0].uv1 = 1;
+    newSide.triangles[0].p2 = p2;
+    newSide.triangles[0].uv2 = 2;
+    newSide.triangles[1].p0 = p2;
+    newSide.triangles[1].uv0 = 2;
+    newSide.triangles[1].p1 = p3;
+    newSide.triangles[1].uv1 = 3;
+    newSide.triangles[1].p2 = p0;
+    newSide.triangles[1].uv2 = 0;
+
+    return newSide;
 }
 
 void MakeCube(Mesh3D* cube)
@@ -98,133 +111,37 @@ void MakeCube(Mesh3D* cube)
     cube->points[7].y = -CUBE_SIZE;
     cube->points[7].z = CUBE_SIZE;
 
+    cube->UVCoords = malloc(4 * sizeof(Vec2));
+    cube->UVCoords[0].x = 0;
+    cube->UVCoords[0].y = 31;
+    cube->UVCoords[1].x = 0;
+    cube->UVCoords[1].y = 0;
+    cube->UVCoords[2].x = 31;
+    cube->UVCoords[2].y = 0;
+    cube->UVCoords[3].x = 31;
+    cube->UVCoords[3].y = 31;
+
     cube->transformedP = malloc(cube->numPoints * sizeof(Vec3));
     memcpy(cube->transformedP, cube->points, sizeof(Vec3) * cube->numPoints);
 
     cube->numTriangles = 12;
-    cube->numFaces = 6;
+    cube->numSides = 6;
     cube->triangleVertices = malloc((cube->numTriangles * 3) * sizeof(Vertex));
-    cube->faces = malloc((cube->numFaces) * sizeof(Face));
-    // back face
-    cube->triangleVertices[0].pointID = 1;
-    cube->triangleVertices[0].UV.x = 0;
-    cube->triangleVertices[0].UV.y = 0;
-    cube->triangleVertices[1].pointID = 2;
-    cube->triangleVertices[1].UV.x = 31;
-    cube->triangleVertices[1].UV.y = 0;
-    cube->triangleVertices[2].pointID = 3;
-    cube->triangleVertices[2].UV.x = 31;
-    cube->triangleVertices[2].UV.y = 31;
-    cube->triangleVertices[3].pointID = 3;
-    cube->triangleVertices[3].UV.x = 31;
-    cube->triangleVertices[3].UV.y = 31;
-    cube->triangleVertices[4].pointID = 0;
-    cube->triangleVertices[4].UV.x = 0;
-    cube->triangleVertices[4].UV.y = 31;
-    cube->triangleVertices[5].pointID = 1;
-    cube->triangleVertices[5].UV.x = 0;
-    cube->triangleVertices[5].UV.y = 0;
-    cube->faces[0].texture = &BeaWater;
-    // right face
-    cube->triangleVertices[6].pointID = 2;
-    cube->triangleVertices[6].UV.x = 31;
-    cube->triangleVertices[6].UV.y = 0;
-    cube->triangleVertices[7].pointID = 3;
-    cube->triangleVertices[7].UV.x = 31;
-    cube->triangleVertices[7].UV.y = 31;
-    cube->triangleVertices[8].pointID = 4;
-    cube->triangleVertices[8].UV.x = 0;
-    cube->triangleVertices[8].UV.y = 31;
-    cube->triangleVertices[9].pointID = 4;
-    cube->triangleVertices[9].UV.x = 0;
-    cube->triangleVertices[9].UV.y = 31;
-    cube->triangleVertices[10].pointID = 7;
-    cube->triangleVertices[10].UV.x = 0;
-    cube->triangleVertices[10].UV.y = 0;
-    cube->triangleVertices[11].pointID = 2;
-    cube->triangleVertices[11].UV.x = 31;
-    cube->triangleVertices[11].UV.y = 0;
-    cube->faces[1].texture = &Bush;
-    // front face
-    cube->triangleVertices[12].pointID = 4;
-    cube->triangleVertices[12].UV.x = 31;
-    cube->triangleVertices[12].UV.y = 31;
-    cube->triangleVertices[13].pointID = 5;
-    cube->triangleVertices[13].UV.x = 0;
-    cube->triangleVertices[13].UV.y = 31;
-    cube->triangleVertices[14].pointID = 6;
-    cube->triangleVertices[14].UV.x = 0;
-    cube->triangleVertices[14].UV.y = 0;
-    cube->triangleVertices[15].pointID = 6;
-    cube->triangleVertices[15].UV.x = 0;
-    cube->triangleVertices[15].UV.y = 0;
-    cube->triangleVertices[16].pointID = 7;
-    cube->triangleVertices[16].UV.x = 31;
-    cube->triangleVertices[16].UV.y = 0;
-    cube->triangleVertices[17].pointID = 4;
-    cube->triangleVertices[17].UV.x = 31;
-    cube->triangleVertices[17].UV.y = 31;
-    cube->faces[2].texture = &Concrete;
-    // left face
-    cube->triangleVertices[18].pointID = 6;
-    cube->triangleVertices[18].UV.x = 31;
-    cube->triangleVertices[18].UV.y = 0;
-    cube->triangleVertices[19].pointID = 1;
-    cube->triangleVertices[19].UV.x = 0;
-    cube->triangleVertices[19].UV.y = 0;
-    cube->triangleVertices[20].pointID = 0;
-    cube->triangleVertices[20].UV.x = 0;
-    cube->triangleVertices[20].UV.y = 31;
-    cube->triangleVertices[21].pointID = 0;
-    cube->triangleVertices[21].UV.x = 0;
-    cube->triangleVertices[21].UV.y = 31;
-    cube->triangleVertices[22].pointID = 5;
-    cube->triangleVertices[22].UV.x = 31;
-    cube->triangleVertices[22].UV.y = 31;
-    cube->triangleVertices[23].pointID = 6;
-    cube->triangleVertices[23].UV.x = 31;
-    cube->triangleVertices[23].UV.y = 0;
-    cube->faces[3].texture = &GrasSand;
-    // top face
-    cube->triangleVertices[24].pointID = 6;
-    cube->triangleVertices[24].UV.x = 0;
-    cube->triangleVertices[24].UV.y = 31;
-    cube->triangleVertices[25].pointID = 1;
-    cube->triangleVertices[25].UV.x = 0;
-    cube->triangleVertices[25].UV.y = 0;
-    cube->triangleVertices[26].pointID = 2;
-    cube->triangleVertices[26].UV.x = 31;
-    cube->triangleVertices[26].UV.y = 0;
-    cube->triangleVertices[27].pointID = 2;
-    cube->triangleVertices[27].UV.x = 31;
-    cube->triangleVertices[27].UV.y = 0;
-    cube->triangleVertices[28].pointID = 7;
-    cube->triangleVertices[28].UV.x = 31;
-    cube->triangleVertices[28].UV.y = 31;
-    cube->triangleVertices[29].pointID = 6;
-    cube->triangleVertices[29].UV.x = 0;
-    cube->triangleVertices[29].UV.y = 31;
-    cube->faces[4].texture = &Trees;
-    // bottom face
-    cube->triangleVertices[30].pointID = 4;
-    cube->triangleVertices[30].UV.x = 31;
-    cube->triangleVertices[30].UV.y = 0;
-    cube->triangleVertices[31].pointID = 5;
-    cube->triangleVertices[31].UV.x = 0;
-    cube->triangleVertices[31].UV.y = 0;
-    cube->triangleVertices[32].pointID = 0;
-    cube->triangleVertices[32].UV.x = 0;
-    cube->triangleVertices[32].UV.y = 31;
-    cube->triangleVertices[33].pointID = 0;
-    cube->triangleVertices[33].UV.x = 0;
-    cube->triangleVertices[33].UV.y = 31;
-    cube->triangleVertices[34].pointID = 3;
-    cube->triangleVertices[34].UV.x = 31;
-    cube->triangleVertices[34].UV.y = 31;
-    cube->triangleVertices[35].pointID = 4;
-    cube->triangleVertices[35].UV.x = 31;
-    cube->triangleVertices[35].UV.y = 0;
-    cube->faces[5].texture = &Wall;
+    cube->sides = malloc((cube->numSides) * sizeof(Side));
+
+    cube->sides[0] = MakeCubeSide(5, 6, 7, 4);
+    cube->sides[1] = MakeCubeSide(0, 1, 6, 5);
+    cube->sides[2] = MakeCubeSide(3, 2, 1, 0);
+    cube->sides[3] = MakeCubeSide(4, 7, 2, 3);
+    cube->sides[4] = MakeCubeSide(6, 1, 2, 7);
+    cube->sides[5] = MakeCubeSide(0, 5, 4, 3);
+
+    cube->sides[0].texture = &Textures[BEACH];
+    cube->sides[1].texture = &Textures[BUSH];
+    cube->sides[2].texture = &Textures[CONCRETE];
+    cube->sides[3].texture = &Textures[GRASSSAND];
+    cube->sides[4].texture = &Textures[TREES];
+    cube->sides[5].texture = &Textures[WALL];
 }
 
 void updateMesh(Mesh2D* mesh)
@@ -266,8 +183,8 @@ void rotatePoints_X(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         old_z = originalPoints[i].z;
         cos_angle = cos(angle);
         sin_angle = sin(angle);
-        new_y = -(old_z * cos_angle - old_y * sin_angle);
-        new_z = (old_z * sin_angle + old_y * cos_angle);
+        new_y = (old_y * cos_angle - old_z * sin_angle);
+        new_z = (old_z * cos_angle + old_y * sin_angle);
         rotatedPoints[i].y = new_y;
         rotatedPoints[i].z = new_z;
     }
@@ -290,7 +207,7 @@ void rotatePoints_Y(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         cos_angle = cos(angle);
         sin_angle = sin(angle);
         new_x = (old_x * cos_angle - old_z * sin_angle);
-        new_z = (old_x * sin_angle + old_z * cos_angle);
+        new_z = (old_z * cos_angle + old_x * sin_angle);
         rotatedPoints[i].x = new_x;
         rotatedPoints[i].z = new_z;
     }
@@ -312,8 +229,8 @@ void rotatePoints_Z(int numPoints, Vec3* originalPoints, Vec3* rotatedPoints, fl
         old_y = originalPoints[i].y;
         cos_angle = cos(angle);
         sin_angle = sin(angle);
-        new_x = (old_x * cos_angle - old_y * sin_angle);
-        new_y = (old_x * sin_angle + old_y * cos_angle);
+        new_x = (old_x * cos_angle + old_y * sin_angle);
+        new_y = (old_y * cos_angle - old_x * sin_angle);
         rotatedPoints[i].x = new_x;
         rotatedPoints[i].y = new_y;
     }
@@ -356,9 +273,9 @@ void updateMesh3D(Mesh3D* object)
     sprintf(X_axis_str, "X ANGLE: %f", object->x_angle);
     sprintf(Y_axis_str, "Y ANGLE: %f", object->y_angle);
     sprintf(Z_axis_str, "Z ANGLE: %f", object->z_angle);
-    renderText(0, 30, X_axis_str, COLOR_WHITE);
+    /*renderText(0, 30, X_axis_str, COLOR_WHITE);
     renderText(0, 40, Y_axis_str, COLOR_WHITE);
-    renderText(0, 50, Z_axis_str, COLOR_WHITE);
+    renderText(0, 50, Z_axis_str, COLOR_WHITE);*/
 }
 
 void draw2DMesh(Mesh2D* mesh)
@@ -388,19 +305,36 @@ void drawFilled3DCube(Mesh3D* cube)
 void drawTextured3DCube(Mesh3D* cube)
 {   
     int i = 0;
-    int face_i = 0;
+    int side_i = 0;
     int triangle_i = 0;
 
-    while (face_i < cube->numFaces)
+    while (side_i < cube->numSides)
     {
         while (i < 2)
         {
-            draw3DCubeTriangleTex(cube, triangle_i, face_i);
+            draw3DCubeTriangleTex(cube, triangle_i, side_i);
             i++;
             triangle_i++;
         }
         i = 0;
-        face_i++;
+        side_i++;
+    }
+}
+
+void drawTextured3DCubeAlt(Mesh3D* cube)
+{   
+    int side_i = 0;
+    int triangle_i = 0;
+
+    while (side_i < cube->numSides)
+    {
+        while (triangle_i < 2)
+        {
+            draw3DCubeTriangleTexAlt(cube, triangle_i, side_i);
+            triangle_i++;
+        }
+        triangle_i = 0;
+        side_i++;
     }
 }
 

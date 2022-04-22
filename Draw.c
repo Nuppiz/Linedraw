@@ -158,11 +158,12 @@ void drawStuff()
     //drawTexturedTriangle(&poly_array[6]);
     //drawTexturedTriangle(&poly_array[7]);
     //drawSprite(144, 68, &CarTex);
-    else if (KEY_IS_PRESSED (KEY_3))
+    if (KEY_IS_PRESSED (KEY_3))
         draw2DMesh(&CarMesh);    
     else if (KEY_IS_PRESSED (KEY_4))*/
+    //drawTextured3DCube(&Cube);
+    drawTextured3DCubeAlt(&Cube);
     //draw3DCube(&Cube);
     //drawFilled3DCube(&Cube);
     //updateMesh3D(&Cube);
-    drawTextured3DCube(&Cube);
 }

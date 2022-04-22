@@ -92,8 +92,21 @@ typedef struct
 
 typedef struct
 {
+    uint16_t p0;
+    uint16_t p1;
+    uint16_t p2;
+    uint16_t uv0;
+    uint16_t uv1;
+    uint16_t uv2;
+    int TextureIndex;
+    Vec3 normal;
+} Triangle;
+
+typedef struct
+{
+    Triangle* triangles;
     Texture* texture;
-} Face;
+} Side;
 
 typedef struct
 {
@@ -104,9 +117,22 @@ typedef struct
     Vec3* transformedP;
     int numTriangles;
     Vertex* triangleVertices;
-    int numFaces;
-    Face* faces;
+    Vec2* UVCoords;
+    int numSides;
+    Side* sides;
     Vec2_int center;
 } Mesh3D;
+
+enum TextureCount
+{
+    CAR,
+    BEACH,
+    BUSH,
+    CONCRETE,
+    GRASSSAND,
+    TREES,
+    WALL,
+    NUM_TEXTURES
+};
 
 #endif
