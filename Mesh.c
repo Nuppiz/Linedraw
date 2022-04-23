@@ -55,9 +55,12 @@ void MakeCarMesh(Mesh2D* carmesh)
     carmesh->triangleVertices[5].UV.y = 63;
 }
 
-Side MakeCubeSide(uint16_t p0, uint16_t p1, uint16_t p2, uint16_t p3)
+TriangleGroup MakeCubeSide(uint16_t p0, uint16_t p1, uint16_t p2, uint16_t p3)
 {
-    Side newSide;
+    TriangleGroup newSide;
+
+    newSide.numTriangles = 2;
+    newSide.triangles = malloc(newSide.numTriangles * sizeof(Triangle));
 
     newSide.triangles[0].p0 = p0;
     newSide.triangles[0].uv0 = 0;
@@ -124,24 +127,22 @@ void MakeCube(Mesh3D* cube)
     cube->transformedP = malloc(cube->numPoints * sizeof(Vec3));
     memcpy(cube->transformedP, cube->points, sizeof(Vec3) * cube->numPoints);
 
-    cube->numTriangles = 12;
-    cube->numSides = 6;
-    cube->triangleVertices = malloc((cube->numTriangles * 3) * sizeof(Vertex));
-    cube->sides = malloc((cube->numSides) * sizeof(Side));
+    cube->numTGs = 6;
+    cube->triangleGroups = malloc((cube->numTGs) * sizeof(TriangleGroup));
 
-    cube->sides[0] = MakeCubeSide(5, 6, 7, 4);
-    cube->sides[1] = MakeCubeSide(0, 1, 6, 5);
-    cube->sides[2] = MakeCubeSide(3, 2, 1, 0);
-    cube->sides[3] = MakeCubeSide(4, 7, 2, 3);
-    cube->sides[4] = MakeCubeSide(6, 1, 2, 7);
-    cube->sides[5] = MakeCubeSide(0, 5, 4, 3);
+    cube->triangleGroups[0] = MakeCubeSide(5, 6, 7, 4);
+    cube->triangleGroups[1] = MakeCubeSide(0, 1, 6, 5);
+    cube->triangleGroups[2] = MakeCubeSide(3, 2, 1, 0);
+    cube->triangleGroups[3] = MakeCubeSide(4, 7, 2, 3);
+    cube->triangleGroups[4] = MakeCubeSide(6, 1, 2, 7);
+    cube->triangleGroups[5] = MakeCubeSide(0, 5, 4, 3);
 
-    cube->sides[0].texture = &Textures[BEACH];
-    cube->sides[1].texture = &Textures[BUSH];
-    cube->sides[2].texture = &Textures[CONCRETE];
-    cube->sides[3].texture = &Textures[GRASSSAND];
-    cube->sides[4].texture = &Textures[TREES];
-    cube->sides[5].texture = &Textures[WALL];
+    cube->triangleGroups[0].texture = &Textures[BEACH];
+    cube->triangleGroups[1].texture = &Textures[BUSH];
+    cube->triangleGroups[2].texture = &Textures[CONCRETE];
+    cube->triangleGroups[3].texture = &Textures[GRASSSAND];
+    cube->triangleGroups[4].texture = &Textures[TREES];
+    cube->triangleGroups[5].texture = &Textures[WALL];
 }
 
 void updateMesh(Mesh2D* mesh)
@@ -304,33 +305,14 @@ void drawFilled3DCube(Mesh3D* cube)
 
 void drawTextured3DCube(Mesh3D* cube)
 {   
-    int i = 0;
     int side_i = 0;
     int triangle_i = 0;
 
-    while (side_i < cube->numSides)
-    {
-        while (i < 2)
-        {
-            draw3DCubeTriangleTex(cube, triangle_i, side_i);
-            i++;
-            triangle_i++;
-        }
-        i = 0;
-        side_i++;
-    }
-}
-
-void drawTextured3DCubeAlt(Mesh3D* cube)
-{   
-    int side_i = 0;
-    int triangle_i = 0;
-
-    while (side_i < cube->numSides)
+    while (side_i < cube->numTGs)
     {
         while (triangle_i < 2)
         {
-            draw3DCubeTriangleTexAlt(cube, triangle_i, side_i);
+            draw3DCubeTriangleTex(cube, triangle_i, side_i);
             triangle_i++;
         }
         triangle_i = 0;

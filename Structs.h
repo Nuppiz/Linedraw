@@ -98,15 +98,15 @@ typedef struct
     uint16_t uv0;
     uint16_t uv1;
     uint16_t uv2;
-    int TextureIndex;
     Vec3 normal;
 } Triangle;
 
 typedef struct
 {
     Triangle* triangles;
+    int numTriangles;
     Texture* texture;
-} Side;
+} TriangleGroup;
 
 typedef struct
 {
@@ -118,8 +118,8 @@ typedef struct
     int numTriangles;
     Vertex* triangleVertices;
     Vec2* UVCoords;
-    int numSides;
-    Side* sides;
+    TriangleGroup* triangleGroups;
+    int numTGs;
     Vec2_int center;
 } Mesh3D;
 
