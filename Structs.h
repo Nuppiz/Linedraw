@@ -62,9 +62,9 @@ typedef struct
 typedef struct
 {
     uint8_t* pixels;
-    int height;
-    int width;
-    uint8_t transparent;
+    uint16_t height;
+    uint16_t width;
+    uint16_t transparent;
 } Texture;
 
 typedef struct
