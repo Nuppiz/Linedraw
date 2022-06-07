@@ -76,7 +76,11 @@
 
 /* Macros */
 #define SIGN(x)                   (((x) < 0) ? -1 : (((x) > 0) ? 1 : 0))
-#define SET_PIXEL(x,y,color)      screen_buf[(y)*SCREEN_WIDTH + (x)] = color
+#if SCREEN_WIDTH == 320
+#define SET_PIXEL(x,y,color) screen_buf[(((y)<<8)+((y)<<6)) + (x)] = color
+#else
+#define SET_PIXEL(x,y,color) screen_buf[(y)*SCREEN_WIDTH + (x)] = color
+#endif
 #define RGB(color)                (color.r, color.g, color.b)
 
 /* Misc / general defines */

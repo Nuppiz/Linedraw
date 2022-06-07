@@ -149,7 +149,7 @@ void drawPolygons()
 void drawStuff()
 {
     //drawLines();
-    /*if (KEY_IS_PRESSED (KEY_1))
+    if (KEY_IS_PRESSED (KEY_1))
         drawPolygons();
     //test_draw();
     //drawFilledTriangle(&poly_array[5]);
@@ -160,9 +160,9 @@ void drawStuff()
     //drawSprite(144, 68, &CarTex);
     if (KEY_IS_PRESSED (KEY_3))
         draw2DMesh(&CarMesh);    
-    else if (KEY_IS_PRESSED (KEY_4))*/
+    else if (KEY_IS_PRESSED (KEY_4))
     //drawTextured3DCube(&Cube);
-    drawTextured3DCube(&Cube);
+        drawTextured3DCube(&Cube);
     //draw3DCube(&Cube);
     //drawFilled3DCube(&Cube);
     //updateMesh3D(&Cube);
